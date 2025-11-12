@@ -104,7 +104,7 @@ process_sample() {
     
     # 排序BAM文件
     echo "  BAM排序..." >> "$sample_log"
-    if ! samtools sort -@ 4 -m 20G "$sam_bam_dir/bam/${base_name}.bam" -o "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
+    if ! samtools sort -@ 4 -m 15G "$sam_bam_dir/bam/${base_name}.bam" -o "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
         echo "  BAM排序失败: $base_name" >> "$sample_log"
         return 1
     fi
