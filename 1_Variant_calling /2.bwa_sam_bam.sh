@@ -66,86 +66,124 @@ else
     echo "序列字典已存在" >> "$log_file"
 fi
 
-# 定义处理函数（使用 bwa-mem2）
-process_sample() {
-    local fq1=$1
-    local base_name=$(basename "$fq1" "_R1.clean.fastq.gz")
-    local fq2="${fq1/_R1.clean.fastq.gz/_R2.clean.fastq.gz}"
-    
-    # 样本特定的日志
-    local sample_log="$sam_bam_dir/logs/${base_name}.log"
-    
-    echo "开始处理样本: $base_name" >> "$sample_log"
-    echo "  R1: $(basename "$fq1")" >> "$sample_log"
-    echo "  R2: $(basename "$fq2")" >> "$sample_log"
-    
-    # 检查R2文件是否存在
-    if [ ! -f "$fq2" ]; then
-        echo "错误: 找不到对应的R2文件: $fq2" >> "$sample_log"
-        return 1
-    fi
-    
-    # 执行 BWA-MEM2 比对
-    echo "  BWA-MEM2 比对..." >> "$sample_log"
-    if ! $BWA_MEM2 mem -t 4 -M -R "@RG\tID:$base_name\tSM:$base_name\tLB:$base_name\tPL:ILLUMINA" "$reference_genome" "$fq1" "$fq2" > "$sam_bam_dir/sam/${base_name}.sam" 2>> "$sample_log"; then
-        echo "  BWA-MEM2 失败: $base_name" >> "$sample_log"
-        return 1
-    fi
-    
-    # 转换SAM为BAM
-    echo "  SAM转BAM..." >> "$sample_log"
-    if ! samtools view -@ 4 -bS "$sam_bam_dir/sam/${base_name}.sam" -o "$sam_bam_dir/bam/${base_name}.bam" 2>> "$sample_log"; then
-        echo "  SAM转BAM失败: $base_name" >> "$sample_log"
-        return 1
-    fi
-    
-    # 删除SAM文件以节省空间
-    rm "$sam_bam_dir/sam/${base_name}.sam"
-    
-    # 排序BAM文件
-    echo "  BAM排序..." >> "$sample_log"
-    if ! samtools sort -@ 4 -m 15G "$sam_bam_dir/bam/${base_name}.bam" -o "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
-        echo "  BAM排序失败: $base_name" >> "$sample_log"
-        return 1
-    fi
-    
-    # 删除未排序的BAM文件
-    rm "$sam_bam_dir/bam/${base_name}.bam"
-    
-    # 为排序后的BAM文件创建索引
-    echo "  BAM索引..." >> "$sample_log"
-    if ! samtools index "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
-        echo "  BAM索引失败: $base_name" >> "$sample_log"
-        return 1
-    fi
-    
-    echo "  完成: $base_name" >> "$sample_log"
-    echo "$base_name: 成功" >> "$log_file"
-    return 0
-}
+# 创建处理脚本（避免函数导出问题）
+PROCESS_SCRIPT="$sam_bam_dir/process_sample.sh"
 
-export -f process_sample
-export clean_data_dir
-export sam_bam_dir
-export reference_genome
-export BWA_MEM2
+cat > "$PROCESS_SCRIPT" << 'EOF'
+#!/bin/bash
+# 样本处理脚本
 
-# 处理所有样本
-echo "=== 开始处理样本 ===" >> "$log_file"
+fq1=$1
+clean_data_dir=$2
+sam_bam_dir=$3
+reference_genome=$4
+BWA_MEM2=$5
 
-# 使用parallel处理（根据系统资源调整并行数）
-find "$clean_data_dir" -name '*_R1.clean.fastq.gz' | sort | \
-    parallel --joblog "$sam_bam_dir/parallel_jobs.log" -j 8 \
-    "process_sample {}"
+base_name=$(basename "$fq1" "_R1.clean.fastq.gz")
+fq2="${fq1/_R1.clean.fastq.gz/_R2.clean.fastq.gz}"
+
+# 样本特定的日志
+sample_log="$sam_bam_dir/logs/${base_name}.log"
+
+echo "开始处理样本: $base_name" >> "$sample_log"
+echo "  R1: $(basename "$fq1")" >> "$sample_log"
+echo "  R2: $(basename "$fq2")" >> "$sample_log"
+
+# 检查R2文件是否存在
+if [ ! -f "$fq2" ]; then
+    echo "错误: 找不到对应的R2文件: $fq2" >> "$sample_log"
+    exit 1
+fi
+
+# 执行 BWA-MEM2 比对
+echo "  BWA-MEM2 比对..." >> "$sample_log"
+if ! $BWA_MEM2 mem -t 2 -M -R "@RG\tID:$base_name\tSM:$base_name\tLB:$base_name\tPL:ILLUMINA" "$reference_genome" "$fq1" "$fq2" > "$sam_bam_dir/sam/${base_name}.sam" 2>> "$sample_log"; then
+    echo "  BWA-MEM2 失败: $base_name" >> "$sample_log"
+    exit 1
+fi
+
+# 转换SAM为BAM
+echo "  SAM转BAM..." >> "$sample_log"
+if ! samtools view -@ 2 -bS "$sam_bam_dir/sam/${base_name}.sam" -o "$sam_bam_dir/bam/${base_name}.bam" 2>> "$sample_log"; then
+    echo "  SAM转BAM失败: $base_name" >> "$sample_log"
+    exit 1
+fi
+
+# 删除SAM文件以节省空间
+rm "$sam_bam_dir/sam/${base_name}.sam"
+
+# 排序BAM文件
+echo "  BAM排序..." >> "$sample_log"
+if ! samtools sort -@ 2 -m 10G "$sam_bam_dir/bam/${base_name}.bam" -o "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
+    echo "  BAM排序失败: $base_name" >> "$sample_log"
+    exit 1
+fi
+
+# 删除未排序的BAM文件
+rm "$sam_bam_dir/bam/${base_name}.bam"
+
+# 为排序后的BAM文件创建索引
+echo "  BAM索引..." >> "$sample_log"
+if ! samtools index "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
+    echo "  BAM索引失败: $base_name" >> "$sample_log"
+    exit 1
+fi
+
+echo "  完成: $base_name" >> "$sample_log"
+echo "$base_name: 成功" >> "$sam_bam_dir/bwa_processing.log"
+EOF
+
+chmod +x "$PROCESS_SCRIPT"
+
+# 处理所有样本 - 使用 GNU Parallel 进行并行处理
+echo "=== 开始并行处理样本 ===" >> "$log_file"
+
+# 检查是否安装了 GNU Parallel
+if command -v parallel >/dev/null 2>&1; then
+    echo "使用 GNU Parallel 并行处理 (15个并行任务)..." >> "$log_file"
+    
+    # 创建任务列表文件
+    task_file="$sam_bam_dir/task_list.txt"
+    find "$clean_data_dir" -name '*_R1.clean.fastq.gz' | sort > "$task_file"
+    
+    # 使用 parallel 并行处理
+    cat "$task_file" | parallel -j 15 --joblog "$sam_bam_dir/parallel_jobs.log" \
+        "$PROCESS_SCRIPT {} $clean_data_dir $sam_bam_dir $reference_genome $BWA_MEM2"
+    
+    # 计算成功数量
+    successful_jobs=$(grep -c ": 成功" "$log_file" 2>/dev/null || echo 0)
+else
+    echo "GNU Parallel 未安装，使用串行处理..." >> "$log_file"
+    
+    # 串行处理
+    success_count=0
+    while IFS= read -r fq1; do
+        if [ -n "$fq1" ]; then
+            echo "处理样本: $(basename "$fq1" _R1.clean.fastq.gz)" >> "$log_file"
+            if "$PROCESS_SCRIPT" "$fq1" "$clean_data_dir" "$sam_bam_dir" "$reference_genome" "$BWA_MEM2"; then
+                ((success_count++))
+            fi
+        fi
+    done < <(find "$clean_data_dir" -name '*_R1.clean.fastq.gz' | sort)
+    
+    successful_jobs=$success_count
+fi
+
+# 清理临时脚本
+rm -f "$PROCESS_SCRIPT"
+
+# 修复算术运算 - 确保变量是数字
+successful_jobs=${successful_jobs:-0}
+sample_count=${sample_count:-0}
+failed_count=$((sample_count - successful_jobs))
 
 # 检查处理结果
-successful_jobs=$(grep -c ": 成功" "$log_file" 2>/dev/null || echo 0)
 echo "处理完成: $successful_jobs/$sample_count 个样本成功处理" >> "$log_file"
 
 # 显示处理摘要
 echo "=== 处理摘要 ===" >> "$log_file"
 echo "成功: $successful_jobs" >> "$log_file"
-echo "失败: $((sample_count - successful_jobs))" >> "$log_file"
+echo "失败: $failed_count" >> "$log_file"
 
 echo "BWA-MEM2 processing completed at $(date)" >> "$log_file"
 
