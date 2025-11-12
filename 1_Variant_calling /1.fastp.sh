@@ -19,9 +19,9 @@ python /home/vensin/software/script/parallel.py \
     -i "$input_dir" \
     -o "$output_dir" \
     -r "$report_dir" \
-    -a "-3 -5 -l 50 -e 20 --detect_adapter_for_pe -w 2" \
-    -1 "_1" \
-    -2 "_2" \
-    -p 15
+    -a "-3 -5 -l 50 -e 20 --detect_adapter_for_pe -w 1" \
+    -1 "R1" \
+    -2 "R2" \
+    -p 30
 
 echo "Processing completed at $(date)"
