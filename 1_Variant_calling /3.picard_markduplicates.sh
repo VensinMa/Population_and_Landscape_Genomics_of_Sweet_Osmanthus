@@ -2,7 +2,7 @@
 
 # 设置目录和文件
 input_bam_dir="/home/data/3.bwa_sam_bam/sorted_bam"
-output_dir="/home/data/4.picard_dedup"
+output_dir="/home/vensin/workspace/snpcalling_wild/4.picard_dedup"
 picard_jar_path="/home/vensin/software/picard.jar"
 
 # 创建输出目录
