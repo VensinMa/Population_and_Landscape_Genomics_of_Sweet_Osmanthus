@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 设置目录和文件
-input_bam_dir="/home/data/4.picard_dedup/markdup"  # Picard去重后的BAM文件
+input_bam_dir="/home/vensin/workspace/snpcalling_wild/4.picard_dedup/markdup"  # Picard去重后的BAM文件
 output_dir="/home/data/5.gatk_haplotypecaller"
 reference_genome="/home/vensin/workspace/snpcalling_wild/0.genome/SFZ.A.onlychr.fa"
 gatk_path="/home/vensin/software/gatk-4.6.2.0/gatk" 
@@ -74,7 +74,7 @@ gvcf_output="$output_dir/gvcf/${base_name}.g.vcf.gz"
 
 # 执行 GATK HaplotypeCaller
 echo "  运行HaplotypeCaller..." >> "$sample_log"
-$gatk_path --java-options "-Xmx20g -Xms4g" HaplotypeCaller \
+$gatk_path --java-options "-Xmx20g -Xms8g" HaplotypeCaller \
     -R "$reference_genome" \
     -I "$input_bam" \
     -O "$gvcf_output" \
@@ -121,14 +121,14 @@ echo "=== 开始GATK HaplotypeCaller处理 ===" >> "$log_file"
 
 # 检查是否安装了 GNU Parallel
 if command -v parallel >/dev/null 2>&1; then
-    echo "使用 GNU Parallel 并行处理 (2个并行任务，因为HaplotypeCaller比较耗资源)..." >> "$log_file"
+    echo "使用 GNU Parallel 并行处理 (6个并行任务，因为HaplotypeCaller比较耗资源)..." >> "$log_file"
     
     # 创建任务列表文件
     task_file="$output_dir/task_list.txt"
     find "$input_bam_dir" -name '*.markdup.bam' | sort > "$task_file"
     
     # 使用 parallel 并行处理
-    cat "$task_file" | parallel -j 2 --joblog "$output_dir/parallel_jobs.log" \
+    cat "$task_file" | parallel -j 6 --joblog "$output_dir/parallel_jobs.log" \
         "$HC_SCRIPT {} $output_dir $reference_genome $gatk_path"
     
     # 计算成功数量
