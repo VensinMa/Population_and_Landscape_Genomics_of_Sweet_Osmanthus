@@ -4,7 +4,7 @@
 input_bam_dir="/home/data/4.picard_dedup/markdup"  # Picard去重后的BAM文件
 output_dir="/home/data/5.gatk_haplotypecaller"
 reference_genome="/home/vensin/workspace/snpcalling_wild/0.genome/SFZ.A.onlychr.fa"
-gatk_path="/home/vensin/software/gatk-4.4.0.0/gatk"  # 请根据您的GATK路径调整
+gatk_path="/home/vensin/software/gatk-4.6.2.0/gatk" 
 
 # 创建输出目录
 mkdir -p "$output_dir/gvcf" "$output_dir/tmp" "$output_dir/logs" "$output_dir/metrics"
@@ -81,12 +81,7 @@ $gatk_path --java-options "-Xmx20g -Xms4g" HaplotypeCaller \
     -ERC GVCF \
     --tmp-dir "$sample_tmp_dir" \
     --native-pair-hmm-threads 4 \
-    --sample-ploidy 2 \
-    --max-reads-per-alignment-start 100 \
-    --read-filter MappingQualityReadFilter \
-    --read-filter NotDuplicateReadFilter \
-    --minimum-mapping-quality 20 \
-    --standard-min-confidence-threshold-for-calling 30.0 2>> "$sample_log"
+    --sample-ploidy 2 >> "$sample_log"
 
 hc_exit_code=$?
 
