@@ -97,14 +97,14 @@ fi
 
 # 执行 BWA-MEM2 比对
 echo "  BWA-MEM2 比对..." >> "$sample_log"
-if ! $BWA_MEM2 mem -t 2 -M -R "@RG\tID:$base_name\tSM:$base_name\tLB:$base_name\tPL:ILLUMINA" "$reference_genome" "$fq1" "$fq2" > "$sam_bam_dir/sam/${base_name}.sam" 2>> "$sample_log"; then
+if ! $BWA_MEM2 mem -t 28  -R "@RG\tID:$base_name\tSM:$base_name\tLB:$base_name\tPL:ILLUMINA" "$reference_genome" "$fq1" "$fq2" > "$sam_bam_dir/sam/${base_name}.sam" 2>> "$sample_log"; then
     echo "  BWA-MEM2 失败: $base_name" >> "$sample_log"
     exit 1
 fi
 
 # 转换SAM为BAM
 echo "  SAM转BAM..." >> "$sample_log"
-if ! samtools view -@ 2 -bS "$sam_bam_dir/sam/${base_name}.sam" -o "$sam_bam_dir/bam/${base_name}.bam" 2>> "$sample_log"; then
+if ! samtools view -@ 28 -bS "$sam_bam_dir/sam/${base_name}.sam" -o "$sam_bam_dir/bam/${base_name}.bam" 2>> "$sample_log"; then
     echo "  SAM转BAM失败: $base_name" >> "$sample_log"
     exit 1
 fi
@@ -114,7 +114,7 @@ rm "$sam_bam_dir/sam/${base_name}.sam"
 
 # 排序BAM文件
 echo "  BAM排序..." >> "$sample_log"
-if ! samtools sort -@ 2 -m 10G "$sam_bam_dir/bam/${base_name}.bam" -o "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
+if ! samtools sort -@ 28  "$sam_bam_dir/bam/${base_name}.bam" -o "$sam_bam_dir/sorted_bam/${base_name}.sorted.bam" 2>> "$sample_log"; then
     echo "  BAM排序失败: $base_name" >> "$sample_log"
     exit 1
 fi
@@ -140,14 +140,14 @@ echo "=== 开始并行处理样本 ===" >> "$log_file"
 
 # 检查是否安装了 GNU Parallel
 if command -v parallel >/dev/null 2>&1; then
-    echo "使用 GNU Parallel 并行处理 (15个并行任务)..." >> "$log_file"
+    echo "处理任务..." >> "$log_file"
     
     # 创建任务列表文件
     task_file="$sam_bam_dir/task_list.txt"
     find "$clean_data_dir" -name '*_R1.clean.fastq.gz' | sort > "$task_file"
     
     # 使用 parallel 并行处理
-    cat "$task_file" | parallel -j 15 --joblog "$sam_bam_dir/parallel_jobs.log" \
+    cat "$task_file" | parallel -j 1 --joblog "$sam_bam_dir/parallel_jobs.log" \
         "$PROCESS_SCRIPT {} $clean_data_dir $sam_bam_dir $reference_genome $BWA_MEM2"
     
     # 计算成功数量
