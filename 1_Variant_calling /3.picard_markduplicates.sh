@@ -2,7 +2,7 @@
 
 # 设置目录和文件
 input_bam_dir="/home/data/3.bwa_sam_bam/sorted_bam"
-output_dir="/home/vensin/workspace/snpcalling_wild/4.picard_dedup"
+output_dir="/home/data/4.picard_dedup"
 picard_jar_path="/home/vensin/software/picard.jar"
 
 # 创建输出目录
@@ -31,7 +31,7 @@ PICARD_SCRIPT="$output_dir/picard_process_sample.sh"
 
 cat > "$PICARD_SCRIPT" << EOF
 #!/bin/bash
-# Picard样本处理脚本
+# Picard 样本处理脚本
 
 sorted_bam_path=\$1
 output_dir=\$2
@@ -42,7 +42,7 @@ base_name=\$(basename "\$sorted_bam_path" .sorted.bam)
 # 样本特定的日志
 sample_log="$output_dir/logs/\${base_name}.log"
 
-echo "开始Picard处理样本: \$base_name" > "\$sample_log"
+echo "开始 Picard 处理样本: \$base_name" > "\$sample_log"
 echo "  输入BAM: \$(basename "\$sorted_bam_path")" >> "\$sample_log"
 
 # 创建样本特定的临时目录
@@ -91,7 +91,7 @@ EOF
 chmod +x "$PICARD_SCRIPT"
 
 # 处理所有样本 - 使用 GNU Parallel 进行并行处理
-echo "=== 开始Picard MarkDuplicates处理 ===" >> "$log_file"
+echo "=== 开始 Picard MarkDuplicates 并行处理 ===" >> "$log_file"
 
 # 检查是否安装了 GNU Parallel
 if command -v parallel >/dev/null 2>&1; then
