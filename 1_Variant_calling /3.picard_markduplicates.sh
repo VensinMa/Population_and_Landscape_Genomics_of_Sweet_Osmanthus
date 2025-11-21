@@ -179,3 +179,4 @@ echo "成功处理: $successful_jobs/$bam_count 个样本"
 echo "详细日志: $log_file"
 echo "标记重复BAM文件: $output_dir/markdup/"
 echo "统计文件: $output_dir/markdup/picard_metrics/"
+
