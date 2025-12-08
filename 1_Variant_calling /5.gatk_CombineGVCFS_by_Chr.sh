@@ -123,7 +123,7 @@ gvcf_output="$output_dir/per_chromosome/combined.${chrom}.g.vcf.gz"
 
 # 执行 GATK CombineGVCFs（按染色体）
 echo "  运行CombineGVCFs (染色体: $chrom)..." >> "$chrom_log"
-$gatk_path --java-options "-Xmx40g -Xms20g" CombineGVCFs \
+$gatk_path --java-options "-Xmx40g -Xms10g" CombineGVCFs \
     -R "$reference_genome" \
     --variant "$gvcf_list_file" \
     -L "$chrom" \
@@ -143,7 +143,7 @@ if [ $combine_exit_code -eq 0 ]; then
         
         # 创建GVCF索引
         echo "  创建GVCF索引..." >> "$chrom_log"
-        $gatk_path --java-options "-Xmx40g -Xms20g" IndexFeatureFile \
+        $gatk_path --java-options "-Xmx40g -Xms10g" IndexFeatureFile \
             -F "$gvcf_output" >> "$chrom_log" 2>&1
             
         if [ $? -eq 0 ]; then
@@ -261,7 +261,7 @@ if [ $successful_jobs -eq $chrom_count ]; then
     final_combined="$output_dir/combined.all_chromosomes.g.vcf.gz"
     
     echo "合并所有染色体文件为单个文件..." >> "$log_file"
-    $gatk_path --java-options "-Xmx100g -Xms80g" MergeVcfs \
+    $gatk_path --java-options "-Xmx100g" MergeVcfs \
         -R "$reference_genome" \
         --variant "$chrom_list_file" \
         -O "$final_combined" \
@@ -271,7 +271,7 @@ if [ $successful_jobs -eq $chrom_count ]; then
         echo "最终合并文件创建成功: $final_combined" >> "$log_file"
         
         # 创建最终索引
-        $gatk_path --java-options "-Xmx40g" IndexFeatureFile \
+        $gatk_path --java-options "-Xmx100g" IndexFeatureFile \
             -F "$final_combined" >> "$log_file" 2>&1
     else
         echo "最终合并文件创建失败" >> "$log_file"
