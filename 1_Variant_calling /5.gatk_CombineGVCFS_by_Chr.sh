@@ -7,7 +7,7 @@ reference_genome="/home/vensin/workspace/snpcalling_wild/0.genome/SFZ.A.onlychr.
 gatk_path="/home/vensin/software/gatk-4.6.2.0/gatk"
 
 # 默认并行任务数
-PARALLEL_JOBS=4
+PARALLEL_JOBS=6
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -h|--help)
             echo "用法: $0 [-j 并行任务数]"
-            echo "   -j, --jobs     指定并行任务数（默认: 4）"
+            echo "   -j, --jobs     指定并行任务数（默认: 6）"
             exit 0
             ;;
         *)
@@ -57,7 +57,7 @@ echo "找到 $gvcf_count 个GVCF文件" >> "$log_file"
 
 # 显示前几个样本
 echo "GVCF文件示例:" >> "$log_file"
-find "$input_gvcf_dir" -name '*.g.vcf.gz' | head -5 | xargs -n 1 basename >> "$log_file"
+find "$input_gvcf_dir" -name '*.g.vcf.gz' | head -1000 | xargs -n 1 basename >> "$log_file"
 
 # 检查参考基因组和相关文件
 echo "=== 检查参考基因组和相关文件 ===" >> "$log_file"
@@ -143,7 +143,7 @@ if [ $combine_exit_code -eq 0 ]; then
         
         # 创建GVCF索引
         echo "  创建GVCF索引..." >> "$chrom_log"
-        $gatk_path --java-options "-Xmx20g -Xms10g" IndexFeatureFile \
+        $gatk_path --java-options "-Xmx40g -Xms20g" IndexFeatureFile \
             -F "$gvcf_output" >> "$chrom_log" 2>&1
             
         if [ $? -eq 0 ]; then
@@ -261,7 +261,7 @@ if [ $successful_jobs -eq $chrom_count ]; then
     final_combined="$output_dir/combined.all_chromosomes.g.vcf.gz"
     
     echo "合并所有染色体文件为单个文件..." >> "$log_file"
-    $gatk_path --java-options "-Xmx80g -Xms40g" MergeVcfs \
+    $gatk_path --java-options "-Xmx100g -Xms80g" MergeVcfs \
         -R "$reference_genome" \
         --variant "$chrom_list_file" \
         -O "$final_combined" \
@@ -271,7 +271,7 @@ if [ $successful_jobs -eq $chrom_count ]; then
         echo "最终合并文件创建成功: $final_combined" >> "$log_file"
         
         # 创建最终索引
-        $gatk_path --java-options "-Xmx20g" IndexFeatureFile \
+        $gatk_path --java-options "-Xmx40g" IndexFeatureFile \
             -F "$final_combined" >> "$log_file" 2>&1
     else
         echo "最终合并文件创建失败" >> "$log_file"
