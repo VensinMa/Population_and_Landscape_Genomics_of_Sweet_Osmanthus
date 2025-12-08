@@ -8,6 +8,8 @@ gatk_path="/home/vensin/software/gatk-4.6.2.0/gatk"
 
 # 默认并行任务数
 PARALLEL_JOBS=6
+# 设置为PARALLEL_JOBS=6时，单任务占用线程数为1,单任务占用内存约为20G（15% * 128）
+# 设置为PARALLEL_JOBS=1时，单任务占用线程数为1,单任务占用内存约为60G（50% * 128）
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
