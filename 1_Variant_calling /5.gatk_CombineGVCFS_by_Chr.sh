@@ -7,9 +7,7 @@ reference_genome="/home/vensin/workspace/snpcalling_wild/0.genome/SFZ.A.onlychr.
 gatk_path="/home/vensin/software/gatk-4.6.2.0/gatk"
 
 # 默认并行任务数
-PARALLEL_JOBS=6
-# 设置为PARALLEL_JOBS=6时，单任务占用线程数为1,单任务占用内存约为20G（15% * 128）
-# 设置为PARALLEL_JOBS=1时，单任务占用线程数为1,单任务占用内存约为60G（50% * 128）
+PARALLEL_JOBS=5
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -20,7 +18,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -h|--help)
             echo "用法: $0 [-j 并行任务数]"
-            echo "   -j, --jobs     指定并行任务数（默认: 6）"
+            echo "   -j, --jobs     指定并行任务数（默认: 5）"
             exit 0
             ;;
         *)
@@ -85,7 +83,7 @@ printf "%s\n" "${gvcf_files[@]}" | sort > "$gvcf_list_file"
 
 echo "GVCF文件列表已创建: $gvcf_list_file" >> "$log_file"
 echo "包含以下文件:" >> "$log_file"
-head -5 "$gvcf_list_file" >> "$log_file"
+head -1000 "$gvcf_list_file" >> "$log_file"
 echo "[...]" >> "$log_file"
 
 # 染色体列表
@@ -145,8 +143,8 @@ if [ $combine_exit_code -eq 0 ]; then
         
         # 创建GVCF索引
         echo "  创建GVCF索引..." >> "$chrom_log"
-        $gatk_path --java-options "-Xmx40g -Xms10g" IndexFeatureFile \
-            -F "$gvcf_output" >> "$chrom_log" 2>&1
+        $gatk_path --java-options "-Xmx40g" IndexFeatureFile \
+            -I "$gvcf_output" >> "$chrom_log" 2>&1
             
         if [ $? -eq 0 ]; then
             echo "  索引创建成功: 染色体 $chrom" >> "$chrom_log"
