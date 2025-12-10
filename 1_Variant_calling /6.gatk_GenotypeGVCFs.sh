@@ -7,7 +7,7 @@ reference_genome="/home/vensin/workspace/snpcalling_wild/0.genome/SFZ.A.onlychr.
 gatk_path="/home/vensin/software/gatk-4.6.2.0/gatk"
 
 # 默认并行任务数
-PARALLEL_JOBS=15
+PARALLEL_JOBS=12
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -h|--help)
             echo "用法: $0 [-j 并行任务数]"
-            echo "   -j, --jobs     指定并行任务数（默认: 15）"
+            echo "   -j, --jobs     指定并行任务数（默认: 12）"
             echo ""
             echo "输入文件目录: $input_gvcf_dir"
             echo "输出文件目录: $output_dir"
