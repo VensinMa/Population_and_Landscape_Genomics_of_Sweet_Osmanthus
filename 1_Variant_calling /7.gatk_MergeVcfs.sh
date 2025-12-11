@@ -255,65 +255,6 @@ fi
 # 清理临时文件
 rm -rf "$tmp_dir"
 
-# 生成染色体文件统计汇总
-echo "" >> "$log_file"
-echo "=== 输入染色体VCF文件统计汇总 ===" >> "$log_file"
-total_input_size=0
-for chrom in "${chromosomes[@]}"; do
-    vcf_file="$input_vcf_dir/genotyped.${chrom}.vcf.gz"
-    if [ -f "$vcf_file" ]; then
-        file_size_bytes=$(stat -c%s "$vcf_file" 2>/dev/null || stat -f%z "$vcf_file" 2>/dev/null || echo "0")
-        file_size_human=$(ls -lh "$vcf_file" | awk '{print $5}')
-        total_input_size=$((total_input_size + file_size_bytes))
-        echo "染色体: $chrom, 文件大小: $file_size_human" >> "$log_file"
-    else
-        echo "染色体: $chrom - 文件缺失" >> "$log_file"
-    fi
-done
-
-# 转换总输入大小为人类可读格式
-if command -v numfmt >/dev/null 2>&1; then
-    total_input_human=$(numfmt --to=iec --suffix=B $total_input_size)
-else
-    total_input_human="$total_input_size 字节"
-fi
-
-echo "总输入文件大小: $total_input_human" >> "$log_file"
-
-# 输出合并文件信息
-if [ -f "$final_merged" ]; then
-    final_size=$(stat -c%s "$final_merged" 2>/dev/null || stat -f%z "$final_merged" 2>/dev/null || echo "0")
-    final_size_human=$(ls -lh "$final_merged" | awk '{print $5}')
-    echo "最终合并文件大小: $final_size_human" >> "$log_file"
-    
-    # 计算压缩率
-    if [ "$total_input_size" -gt 0 ] && [ "$final_size" -gt 0 ]; then
-        compression_ratio=$(echo "scale=2; $total_input_size / $final_size" | bc 2>/dev/null || echo "N/A")
-        echo "压缩率（输入/输出）: $compression_ratio" >> "$log_file"
-    fi
-    
-    # 获取变异位点数统计（可选）
-    echo "统计合并文件变异位点数..." >> "$log_file"
-    variant_count=$($gatk_path --java-options "-Xmx20g" CountVariants \
-        -V "$final_merged" 2>/dev/null | grep -oP '\d+$' || echo "未知")
-    echo "合并文件总变异位点数: $variant_count" >> "$log_file"
-fi
-
-echo "GATK MergeVcfs processing completed at $(date)" >> "$log_file"
-
-# 创建重运行脚本（如果需要）
-if [ $merge_exit_code -ne 0 ]; then
-    retry_script="$output_dir/retry_mergevcfs.sh"
-    echo "#!/bin/bash" > "$retry_script"
-    echo "# 重运行合并VCF文件" >> "$retry_script"
-    echo "# 生成时间: $(date)" >> "$retry_script"
-    echo "" >> "$retry_script"
-    echo "echo '=== 重新运行 MergeVcfs ==='" >> "$retry_script"
-    echo "$0 -f" >> "$retry_script"
-    chmod +x "$retry_script"
-    echo "已创建重运行脚本: $retry_script" >> "$log_file"
-fi
-
 # 在终端显示最终结果
 echo ""
 echo "=================================================================="
