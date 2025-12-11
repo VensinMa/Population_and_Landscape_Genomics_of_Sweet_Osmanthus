@@ -86,18 +86,23 @@ if [ ! -f "$dict_file" ]; then
     $gatk_path CreateSequenceDictionary -R "$reference_genome" -O "$dict_file" >> "$log_file" 2>&1
 fi
 
-# 获取染色体列表（从输入文件名中提取）
+# 修复：正确获取染色体列表
 echo "=== 提取染色体列表 ===" >> "$log_file"
 chromosomes=()
-for vcf_file in "$input_vcf_dir"/genotyped.*.vcf.gz; do
+
+# 方法1：使用find命令正确提取染色体名
+while IFS= read -r vcf_file; do
     if [ -f "$vcf_file" ]; then
         # 提取染色体名，例如从 genotyped.Chr01.vcf.gz 提取 Chr01
-        chrom=$(basename "$vcf_file" .vcf.gz | sed 's/genotyped\.//')
+        filename=$(basename "$vcf_file")
+        chrom="${filename#genotyped.}"  # 移除前缀 "genotyped."
+        chrom="${chrom%.vcf.gz}"        # 移除后缀 ".vcf.gz"
         chromosomes+=("$chrom")
+        echo "  提取染色体: $chrom (来自: $filename)" >> "$log_file"
     fi
-done
+done < <(find "$input_vcf_dir" -name 'genotyped.*.vcf.gz' | sort)
 
-# 如果没有找到染色体，使用默认列表
+# 方法2：如果方法1没有找到染色体，使用默认列表
 if [ ${#chromosomes[@]} -eq 0 ]; then
     echo "警告: 从文件名中未提取到染色体，使用默认染色体列表" >> "$log_file"
     chromosomes=("Chr01" "Chr02" "Chr03" "Chr04" "Chr05" "Chr06" "Chr07" "Chr08" "Chr09" "Chr10"
@@ -105,41 +110,51 @@ if [ ${#chromosomes[@]} -eq 0 ]; then
                  "Chr21" "Chr22" "Chr23")
 fi
 
-# 排序染色体列表
-IFS=$'\n' chromosomes=($(sort <<<"${chromosomes[@]}"))
-unset IFS
-
+# 排序染色体列表（按数字顺序）
 echo "找到 ${#chromosomes[@]} 条染色体需要合并:" >> "$log_file"
-printf "%s\n" "${chromosomes[@]}" >> "$log_file"
+for chrom in "${chromosomes[@]}"; do
+    echo "  $chrom" >> "$log_file"
+done
 
 # 创建染色体文件列表（用于合并）
 chrom_list_file="$output_dir/chromosome_files.list"
 > "$chrom_list_file"
+added_count=0
+missing_count=0
+
+echo "=== 创建染色体文件列表 ===" >> "$log_file"
 for chrom in "${chromosomes[@]}"; do
     chrom_file="$input_vcf_dir/genotyped.${chrom}.vcf.gz"
     if [ -f "$chrom_file" ] && [ -f "${chrom_file}.tbi" ]; then
         echo "$chrom_file" >> "$chrom_list_file"
-        echo "  已添加: $chrom_file" >> "$log_file"
+        echo "  ✓ 已添加: $(basename "$chrom_file")" >> "$log_file"
+        ((added_count++))
     else
-        echo "警告: 染色体 $chrom 的VCF文件或索引文件不存在" >> "$log_file"
-        echo "  文件: $chrom_file" >> "$log_file"
-        echo "  索引: ${chrom_file}.tbi" >> "$log_file"
+        echo "  ✗ 缺失: 染色体 $chrom 的VCF文件或索引文件不存在" >> "$log_file"
+        echo "    文件: $(basename "$chrom_file")" >> "$log_file"
+        echo "    索引: $(basename "$chrom_file").tbi" >> "$log_file"
+        ((missing_count++))
     fi
 done
 
 # 统计可合并的文件数量
-mergeable_count=$(wc -l < "$chrom_list_file")
-echo "可合并的文件数量: $mergeable_count/${#chromosomes[@]}" >> "$log_file"
+echo "可合并的文件数量: $added_count/${#chromosomes[@]}" >> "$log_file"
+echo "缺失的文件数量: $missing_count" >> "$log_file"
 
-if [ "$mergeable_count" -eq 0 ]; then
+if [ "$added_count" -eq 0 ]; then
     echo "错误: 没有找到可合并的VCF文件（所有文件都缺少或索引不完整）" | tee -a "$log_file"
     exit 1
 fi
 
-if [ "$mergeable_count" -ne "${#chromosomes[@]}" ]; then
-    echo "警告: 有 $((chrom_count - mergeable_count)) 条染色体的文件无法合并" >> "$log_file"
-    echo "继续合并可用的 $mergeable_count 条染色体..." >> "$log_file"
+if [ "$missing_count" -gt 0 ]; then
+    echo "警告: 有 $missing_count 条染色体的文件无法合并" >> "$log_file"
+    echo "继续合并可用的 $added_count 条染色体..." >> "$log_file"
 fi
+
+# 显示文件列表内容
+echo "" >> "$log_file"
+echo "=== 染色体文件列表内容 ===" >> "$log_file"
+cat "$chrom_list_file" >> "$log_file"
 
 # 输出文件
 final_merged="$output_dir/merged.all_chromosomes.vcf.gz"
@@ -175,7 +190,7 @@ fi
 
 # 执行 GATK MergeVcfs 合并所有染色体
 echo "=== 开始GATK MergeVcfs合并染色体VCF文件 ===" >> "$log_file"
-echo "合并 $mergeable_count 条染色体的VCF文件..." >> "$log_file"
+echo "合并 $added_count 条染色体的VCF文件..." >> "$log_file"
 
 # 创建临时目录
 tmp_dir="$output_dir/tmp"
@@ -191,8 +206,10 @@ else
     echo "可用磁盘空间: $available_space KB" >> "$log_file"
 fi
 
-# 执行合并
+# 执行合并 - 修复参数名：使用 -I 而不是 --variant
 echo "运行MergeVcfs..." >> "$log_file"
+echo "命令: $gatk_path --java-options \"-Xmx80g -Xms20g\" MergeVcfs -R \"$reference_genome\" -I \"$chrom_list_file\" -O \"$final_merged\" --tmp-dir \"$tmp_dir\"" >> "$log_file"
+
 $gatk_path --java-options "-Xmx80g -Xms20g" MergeVcfs \
     -R "$reference_genome" \
     -I "$chrom_list_file" \
@@ -222,7 +239,7 @@ if [ $merge_exit_code -eq 0 ]; then
             echo "验证合并文件..." >> "$log_file"
             $gatk_path --java-options "-Xmx20g" ValidateVariants \
                 -R "$reference_genome" \
-                -V "$final_merged" >> "$log_file" 2>&1 || true
+                -V "$final_merged" >> "$log_file" 2>&1 || echo "验证过程有警告，但文件可能存在" >> "$log_file"
         else
             echo "索引创建失败" >> "$log_file"
             merge_exit_code=1
@@ -237,6 +254,51 @@ fi
 
 # 清理临时文件
 rm -rf "$tmp_dir"
+
+# 生成染色体文件统计汇总
+echo "" >> "$log_file"
+echo "=== 输入染色体VCF文件统计汇总 ===" >> "$log_file"
+total_input_size=0
+for chrom in "${chromosomes[@]}"; do
+    vcf_file="$input_vcf_dir/genotyped.${chrom}.vcf.gz"
+    if [ -f "$vcf_file" ]; then
+        file_size_bytes=$(stat -c%s "$vcf_file" 2>/dev/null || stat -f%z "$vcf_file" 2>/dev/null || echo "0")
+        file_size_human=$(ls -lh "$vcf_file" | awk '{print $5}')
+        total_input_size=$((total_input_size + file_size_bytes))
+        echo "染色体: $chrom, 文件大小: $file_size_human" >> "$log_file"
+    else
+        echo "染色体: $chrom - 文件缺失" >> "$log_file"
+    fi
+done
+
+# 转换总输入大小为人类可读格式
+if command -v numfmt >/dev/null 2>&1; then
+    total_input_human=$(numfmt --to=iec --suffix=B $total_input_size)
+else
+    total_input_human="$total_input_size 字节"
+fi
+
+echo "总输入文件大小: $total_input_human" >> "$log_file"
+
+# 输出合并文件信息
+if [ -f "$final_merged" ]; then
+    final_size=$(stat -c%s "$final_merged" 2>/dev/null || stat -f%z "$final_merged" 2>/dev/null || echo "0")
+    final_size_human=$(ls -lh "$final_merged" | awk '{print $5}')
+    echo "最终合并文件大小: $final_size_human" >> "$log_file"
+    
+    # 计算压缩率
+    if [ "$total_input_size" -gt 0 ] && [ "$final_size" -gt 0 ]; then
+        compression_ratio=$(echo "scale=2; $total_input_size / $final_size" | bc 2>/dev/null || echo "N/A")
+        echo "压缩率（输入/输出）: $compression_ratio" >> "$log_file"
+    fi
+    
+    # 获取变异位点数统计（可选）
+    echo "统计合并文件变异位点数..." >> "$log_file"
+    variant_count=$($gatk_path --java-options "-Xmx20g" CountVariants \
+        -V "$final_merged" 2>/dev/null | grep -oP '\d+$' || echo "未知")
+    echo "合并文件总变异位点数: $variant_count" >> "$log_file"
+fi
+
 echo "GATK MergeVcfs processing completed at $(date)" >> "$log_file"
 
 # 创建重运行脚本（如果需要）
@@ -259,7 +321,7 @@ echo "GATK MergeVcfs 合并染色体VCF文件完成!"
 echo "=================================================================="
 
 if [ $merge_exit_code -eq 0 ]; then
-    echo "✓ 成功合并 $mergeable_count 条染色体的VCF文件"
+    echo "✓ 成功合并 $added_count 条染色体的VCF文件"
     echo "合并文件: $final_merged"
     
     if [ -f "$final_merged" ]; then
@@ -281,7 +343,8 @@ fi
 echo "详细日志: $log_file"
 echo "输入文件列表: $chrom_list_file"
 echo "输入染色体: ${#chromosomes[@]} 条"
-echo "成功合并: $mergeable_count 条"
+echo "成功合并: $added_count 条"
+echo "缺失: $missing_count 条"
 
 echo ""
 echo "下一步建议:"
