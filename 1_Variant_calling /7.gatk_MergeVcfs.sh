@@ -195,9 +195,9 @@ fi
 echo "运行MergeVcfs..." >> "$log_file"
 $gatk_path --java-options "-Xmx80g -Xms20g" MergeVcfs \
     -R "$reference_genome" \
-    --variant "$chrom_list_file" \
+    -I "$chrom_list_file" \
     -O "$final_merged" \
-    --tmp-dir "$tmp_dir" >> "$log_file" 2>&1
+    --TMP_DIR "$tmp_dir" >> "$log_file" 2>&1
 
 merge_exit_code=$?
 
