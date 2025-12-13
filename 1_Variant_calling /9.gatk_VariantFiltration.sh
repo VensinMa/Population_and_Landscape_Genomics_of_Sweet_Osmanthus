@@ -10,7 +10,7 @@
 
 # --- 1. 目录和文件配置 ---
 input_base_dir="/home/data/9.gatk_selectvariants"
-output_base_dir="/home/data/10.gatk_variant_filtration_pass"
+output_base_dir="/home/data/10.gatk_variantfiltration"
 
 input_snp_vcf="$input_base_dir/SNP/raw_snps.vcf.gz"
 input_indel_vcf="$input_base_dir/INDEL/raw_indels.vcf.gz"
