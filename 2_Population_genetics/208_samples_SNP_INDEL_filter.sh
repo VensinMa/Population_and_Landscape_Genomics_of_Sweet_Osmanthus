@@ -16,6 +16,11 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
 # 然后建立索引
 tabix -p vcf /home/vensin/workspace/snpcalling_wild/11.Vcftools_VariantFiltration/snp/208_samples_snp_filtered.recode.vcf.gz
 
+## After filtering, kept 208 out of 208 Individuals
+## Outputting VCF file...
+## After filtering, kept 12522374 out of a possible 121081777 Sites
+## Run Time = 6125.00 seconds
+
 ################################################################ INDEL ##############################################################
 # 1. 创建并进入目录
 mkdir -p /home/vensin/workspace/snpcalling_wild/11.Vcftools_VariantFiltration/indel
@@ -34,3 +39,8 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/INDEL/indel_filtered.vcf.g
 
 # 3. 建立索引
 tabix -p vcf 208_samples_indel_filtered.recode.vcf.gz
+
+## After filtering, kept 208 out of 208 Individuals
+## Outputting VCF file...
+## After filtering, kept 10253973 out of a possible 17338138 Sites
+## Run Time = 2438.00 seconds
