@@ -15,3 +15,4 @@ cd /home/vensin/workspace/snpcalling_wild/12.population_genetics/faststructure/r
 chooseK.py --input=/home/vensin/workspace/snpcalling_wild/12.population_genetics/faststructure/result/LD_faststructure_K
 ## Model complexity that maximizes marginal likelihood = 4
 ## Model components used to explain structure in data = 7
+
