@@ -23,6 +23,23 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
 # 然后建立索引
 tabix -p vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.recode.vcf.gz
 
+plink --vcf  /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.recode.vcf.gz \
+    --indep-pairwise 50 5 0.2 \
+    --out LD_202  \
+    --allow-extra-chr  \
+    --set-missing-var-ids @:#  
+##  wc -l  LD.prune.in
+##  LD.prune.in
+
+sed 's/:/ /g' LD_202.prune.in > LD_202.prune.in.VCFTOOLS.txt
+
+vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.recode.vcf.gz \
+    --positions LD_202.prune.in.VCFTOOLS.txt \
+    --recode --recode-INFO-all \
+    --stdout \
+    2> 202_samples_snp_filtered.LD.pruned.recode.vcf.log \
+    | bgzip -@ 8 > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.recode.vcf.gz
+
 
 
 ################################################################ INDEL ##############################################################
