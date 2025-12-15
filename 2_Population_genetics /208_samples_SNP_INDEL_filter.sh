@@ -17,7 +17,20 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
 # 然后建立索引
 tabix -p vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.recode.vcf.gz
 
+plink --vcf  /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.recode.vcf.gz \
+    --indep-pairwise 50 5 0.2 \
+    --out LD  \
+    --allow-extra-chr  \
+    --set-missing-var-ids @:#  
+##  wc -l  LD.prune.in
+##  LD.prune.in
 
+sed 's/:/ /g' LD.prune.in > LD.prune.in.VCFTOOLS.txt
+
+vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.recode.vcf.gz \
+    --positions LD.prune.in.VCFTOOLS.txt \
+    --recode --recode-INFO-all \
+    --out 208_samples_snp_filtered.LD.pruned
 
 ################################################################ INDEL ##############################################################
 # 1. 创建并进入目录
