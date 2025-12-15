@@ -12,6 +12,6 @@ INPUT_FILE="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_sa
 # > log_K{}.out: 将包含 CV error 的日志重定向保存
 seq 20 -1 2 | parallel -j 10 "admixture --cv -s 123 $INPUT_FILE {} > log_K{}.out" &
 
-# 确定最佳 K 值（CV error (Cross-Validation Error) 最小）
+# 4. 确定最佳 K 值（CV error (Cross-Validation Error) 最小）
 grep -h "CV" log_K*.out | sort -n -k 4
 
