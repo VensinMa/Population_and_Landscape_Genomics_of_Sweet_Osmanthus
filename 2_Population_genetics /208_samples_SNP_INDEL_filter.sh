@@ -19,18 +19,21 @@ tabix -p vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_s
 
 plink --vcf  /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.recode.vcf.gz \
     --indep-pairwise 50 5 0.2 \
-    --out LD  \
+    --out LD_208  \
     --allow-extra-chr  \
     --set-missing-var-ids @:#  
 ##  wc -l  LD.prune.in
 ##  LD.prune.in
 
-sed 's/:/ /g' LD.prune.in > LD.prune.in.VCFTOOLS.txt
+sed 's/:/ /g' LD_208.prune.in > LD_208.prune.in.VCFTOOLS.txt
 
 vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.recode.vcf.gz \
-    --positions LD.prune.in.VCFTOOLS.txt \
+    --positions LD_208.prune.in.VCFTOOLS.txt \
     --recode --recode-INFO-all \
-    --out 208_samples_snp_filtered.LD.pruned
+    --stdout \
+    2> 208_samples_snp_filtered.LD.pruned.recode.vcf.log \
+    | bgzip -@ 8 > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.LD.pruned.recode.vcf.gz
+
 
 ################################################################ INDEL ##############################################################
 # 1. 创建并进入目录
