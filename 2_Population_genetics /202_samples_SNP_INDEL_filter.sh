@@ -40,7 +40,8 @@ vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/2
     2> 202_samples_snp_filtered.LD.pruned.recode.vcf.log \
     | bgzip -@ 8 > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.recode.vcf.gz
 
-
+plink --vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.recode.vcf.gz \
+    --make-bed   --out /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned  --keep-allele-order  --allow-extra-chr
 
 ################################################################ INDEL ##############################################################
 # 1. 创建并进入目录
