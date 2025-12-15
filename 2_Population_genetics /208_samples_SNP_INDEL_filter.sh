@@ -11,6 +11,7 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
   --max-missing 0.8 --maf 0.05 \
   --recode --recode-INFO-all \
   --stdout \
+  2> 208_samples_snp_filtered.recode.vcf.log \
   | bgzip -@ 8 > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.recode.vcf.gz
 
 # 然后建立索引
@@ -32,6 +33,7 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/INDEL/indel_filtered.vcf.g
   --max-missing 0.8 --maf 0.05 \
   --recode --recode-INFO-all \
   --stdout \
+  2> 208_samples_indel_filtered.recode.vcf.log \
   | bgzip -@ 8 > 208_samples_indel_filtered.recode.vcf.gz
 
 # 3. 建立索引
