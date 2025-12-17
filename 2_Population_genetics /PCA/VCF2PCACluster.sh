@@ -27,4 +27,5 @@ VCF2PCACluster \
   -InVCF /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.LD.pruned.recode.vcf.gz \
   -InSampleGroup sample.group.txt \
   -OutPut 202_samples_AutoPCA \
+  -PCnum 10 \
   -Threads 8
