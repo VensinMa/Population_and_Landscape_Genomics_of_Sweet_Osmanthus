@@ -11,4 +11,24 @@ seq 2 20 | parallel -j 10 "admixture --cv -s 123 /home/vensin/workspace/snpcalli
 
 # 4. 确定最佳 K 值（CV error (Cross-Validation Error) 最小）
 grep -h "CV" log_K*.out | sort -n -k 4
+## (base) vensin@Ubuntu24:~/workspace/snpcalling_wild/12.population_genetics/admixture/result$ grep -h "CV" log_K*.out | sort -n -k 4
+## CV error (K=6): 0.43273
+## CV error (K=5): 0.43483
+## CV error (K=4): 0.43840
+## CV error (K=3): 0.44112
+## CV error (K=7): 0.44222
+## CV error (K=2): 0.44499
+## CV error (K=8): 0.44512
+## CV error (K=9): 0.44775
+## CV error (K=10): 0.45419
+## CV error (K=11): 0.45523
+## CV error (K=12): 0.45850
+## CV error (K=13): 0.46217
+## CV error (K=14): 0.48551
+## CV error (K=15): 0.48637
+## CV error (K=16): 0.48728
+## CV error (K=17): 0.50524
+## CV error (K=19): 0.51016
+## CV error (K=20): 0.52380
+## CV error (K=18): 0.52457
 
