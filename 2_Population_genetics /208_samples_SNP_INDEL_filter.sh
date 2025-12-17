@@ -34,7 +34,13 @@ vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/2
     2> 208_samples_snp_filtered.LD.pruned.recode.vcf.log \
     | bgzip -@ 8 > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.LD.pruned.recode.vcf.gz
 
-
+vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.LD.pruned.recode.vcf.gz \
+    --max-missing 1 \
+    --recode --recode-INFO-all \
+    --stdout \
+    2> 208_samples_snp_filtered.LD.pruned.nomissing.recode.vcf.log \
+    | bgzip -@ 16 > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.LD.pruned.nomissing.recode.vcf.gz
+    
 ################################################################ INDEL ##############################################################
 # 1. 创建并进入目录
 mkdir -p /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel
