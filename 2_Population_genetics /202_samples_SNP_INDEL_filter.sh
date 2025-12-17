@@ -69,3 +69,6 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/INDEL/indel_filtered.vcf.g
 
 # 3. 建立索引
 tabix -p vcf 202_samples_indel_filtered.recode.vcf.gz
+
+
+
