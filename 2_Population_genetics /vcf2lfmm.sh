@@ -8,6 +8,9 @@ plink --vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_sa
 sed '1d; s/NA/9/g' /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.plink.recodeA.raw | \
 awk '{ $1=$2=$3=$4=$5=$6=""; print substr($0, index($0,$7)) }' > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.plink.recodeA.lfmm
 
+plink --vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.recode.vcf.gz \
+      --recode --allow-extra-chr \
+      --out /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.plink
 
 ##################################### LD  ######################################
 # Step 1: VCF -> .raw, VCF 转 Raw(0, 1, 2 的数字编码)
