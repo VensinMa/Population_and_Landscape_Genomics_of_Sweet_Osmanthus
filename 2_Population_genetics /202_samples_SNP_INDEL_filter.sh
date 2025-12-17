@@ -43,6 +43,8 @@ vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/2
 plink --vcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.recode.vcf.gz \
     --make-bed   --out /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned  --keep-allele-order  --allow-extra-chr
 
+
+
 ################################################################ INDEL ##############################################################
 # 1. 创建并进入目录
 mkdir -p /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel
