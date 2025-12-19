@@ -1,164 +1,136 @@
-#!/bin/bash
-
 # ===========================
 # Shell脚本部分：处理群体MAF
 # ===========================
 
-# 输入文件和目录
+# 输入文件路径
 vcf_file="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.nomissing.recode.vcf.gz"
 pop_file="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202samples.pop"
+
+# 检查输入文件
+if [ ! -f "$vcf_file" ] || [ ! -f "$pop_file" ]; then
+    echo "【错误】找不到输入文件，请检查路径！"
+    exit 1
+fi
 
 # 输出目录
 output_dir="population_maf_results"
 temp_dir="${output_dir}/temp_ids"
+plink_binary_prefix="${output_dir}/master_binary" 
+MAX_JOBS=10
 
-# 确保输出和临时目录存在
 mkdir -p "$output_dir"
 mkdir -p "$temp_dir"
 
-# 从群体信息文件中提取独特的群体，并保存到一个临时文件
+echo "Step 1: 预处理 - 将 VCF 转为 PLINK 格式 (使用 double-id 修复ID匹配)..."
+
+# 【关键修改】使用 --double-id，确保 FID 和 IID 都是样本名
+plink --vcf "$vcf_file" \
+      --make-bed \
+      --allow-extra-chr \
+      --keep-allele-order \
+      --double-id \
+      --out "$plink_binary_prefix" \
+      --silent
+
+# 检查是否成功
+if [ ! -f "${plink_binary_prefix}.fam" ]; then
+    echo "【错误】PLINK 转换失败，未生成 .fam 文件。"
+    exit 1
+fi
+
+echo "Step 2: 提取群体信息..."
 cut -f2 "$pop_file" | sort | uniq > "${temp_dir}/unique_groups.txt"
 
-# 为每个独特的群体生成包含个体ID的文件，确保每行格式为 "个体ID 个体ID"
+# 生成 ID 列表
 while read -r group; do
-    grep "\b$group\b" "$pop_file" | awk '{print $1, $1}' > "${temp_dir}/${group}.ids"
+    # 生成 FID IID 两列，均使用样本名
+    awk -v g="$group" '$2 == g {print $1, $1}' "$pop_file" > "${temp_dir}/${group}.ids"
 done < "${temp_dir}/unique_groups.txt"
 
-# 使用Plink处理每个群体
+# ================= Debug 环节 =================
+# 在大规模运行前，先进行一次 ID 匹配测试，防止刷屏报错
+echo "Running ID match check..."
+first_group=$(head -n 1 "${temp_dir}/unique_groups.txt")
+head_fam=$(head -n 3 "${plink_binary_prefix}.fam" | awk '{print $1, $2}')
+head_ids=$(head -n 3 "${temp_dir}/${first_group}.ids")
+
+echo "--- Debug Info ---"
+echo "PLINK 数据中的 ID (前3行 FID IID):"
+echo "$head_fam"
+echo "我们生成的筛选 ID (前3行 FID IID):"
+echo "$head_ids"
+echo "------------------"
+# ==============================================
+
+echo "Step 3: 开始并行计算频率..."
+
+process_group() {
+    local group=$1
+    plink --bfile "$plink_binary_prefix" \
+          --keep "${temp_dir}/${group}.ids" \
+          --allow-extra-chr \
+          --freq \
+          --out "${output_dir}/${group}_population_maf" \
+          --silent
+
+    if [ $? -eq 0 ]; then
+        echo "[Success] $group finished."
+    else
+        echo "[Error] $group failed (Check logs)."
+    fi
+}
+
 while read -r group; do
-    (
-        echo "=============================="
-        echo "开始处理群体：$group"
-        
-        # 生成BED文件
-        plink --vcf "$vcf_file" \
-              --keep "${temp_dir}/${group}.ids" \
-              --make-bed \
-              --allow-extra-chr \
-              --keep-allele-order \
-              --out "${output_dir}/${group}_maf" \
-              --set-missing-var-ids @:# 
-        
-        # 确认BED文件已生成
-        if [ $? -eq 0 ]; then
-            echo "BED文件生成成功：${output_dir}/${group}_maf.bed"
-            
-            # 计算频率
-            plink --bfile "${output_dir}/${group}_maf" \
-                  --allow-extra-chr \
-                  --freq \
-                  --out "${output_dir}/${group}_population_maf"
-            
-            if [ $? -eq 0 ]; then
-                echo "频率计算成功：${output_dir}/${group}_population_maf.frq"
-            else
-                echo "频率计算失败：$group"
-            fi
-        else
-            echo "生成BED文件失败：$group"
-        fi
-        
-        echo "完成群体：$group"
-        echo "=============================="
-    ) &
+    process_group "$group" &
+    if [[ $(jobs -r -p | wc -l) -ge $MAX_JOBS ]]; then
+        wait -n
+    fi
 done < "${temp_dir}/unique_groups.txt"
 
-# 等待所有后台进程完成
 wait
-
-echo "所有群体处理完毕。"
-
-# ====================================
-# 嵌入第一个Python脚本：分析MAF结果
-# ====================================
-
-python3 << 'EOF1'
-import os
-
-def analyze_maf(output_dir):
-    print("\n===== 开始分析MAF结果 =====")
-    maf_files = [f for f in os.listdir(output_dir) if f.endswith("_population_maf.frq")]
-    
-    if not maf_files:
-        print("未找到任何 .frq 文件。")
-        return
-    
-    for maf_file in maf_files:
-        file_path = os.path.join(output_dir, maf_file)
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as f:
-                lines = f.readlines()
-                print(f"{maf_file} 包含 {len(lines)-1} 个SNP数据。")  # 减去标题行
-        else:
-            print(f"文件未找到：{maf_file}")
-
-    print("===== MAF分析完成 =====\n")
-
-def main():
-    output_directory = "population_maf_results"
-    analyze_maf(output_directory)
-
-if __name__ == "__main__":
-    main()
-EOF1
+echo "所有群体频率计算完毕。"
 
 # ====================================
-# 嵌入第二个Python脚本：合并MAF结果
+# Python脚本：合并MAF结果
 # ====================================
 
 python3 << 'EOF2'
 import pandas as pd
 import os
+import glob
 
-def combine_maf(input_dir, output_file):
+def combine_maf_optimized(input_dir, output_file):
     print("===== 开始合并MAF结果 =====")
-    frq_files = [f for f in os.listdir(input_dir) if f.endswith('.frq')]
+    frq_files = glob.glob(os.path.join(input_dir, "*_population_maf.frq"))
     
     if not frq_files:
-        print("未找到任何 .frq 文件用于合并。")
+        print("错误：未找到任何 .frq 文件。")
         return
     
-    combined_maf = pd.DataFrame()
-    all_snps = []
+    print(f"找到 {len(frq_files)} 个文件，开始合并...")
+    dfs = []
     
-    for frq_file in frq_files:
-        population_name = frq_file.split('_population_maf.frq')[0]
-        file_path = os.path.join(input_dir, frq_file)
-        
+    for file_path in frq_files:
+        file_name = os.path.basename(file_path)
+        # 移除后缀得到群体名
+        population_name = file_name.replace('_population_maf.frq', '')
         try:
-            df = pd.read_csv(file_path, sep=r'\s+')
-            df = df[['SNP', 'MAF']]
+            df = pd.read_csv(file_path, sep=r'\s+', usecols=['SNP', 'MAF'], engine='c')
+            df.set_index('SNP', inplace=True)
             df.rename(columns={'MAF': population_name}, inplace=True)
-            
-            if not all_snps:
-                all_snps = df['SNP'].tolist()
-            
-            if combined_maf.empty:
-                combined_maf = df
-            else:
-                combined_maf = combined_maf.merge(df, on='SNP', how='outer')
-            
-            print(f"已处理文件：{frq_file}")
+            dfs.append(df)
         except Exception as e:
-            print(f"处理文件 {frq_file} 时出错：{e}")
-    
-    if not combined_maf.empty:
-        combined_maf['SNP'] = pd.Categorical(combined_maf['SNP'], categories=all_snps, ordered=True)
-        combined_maf.sort_values('SNP', inplace=True)
-        combined_maf.set_index('SNP', inplace=True)
-        combined_maf = combined_maf.T
-        combined_maf.to_csv(output_file)
-        print(f"===== 合并MAF结果已保存到 {output_file} =====\n")
-    else:
-        print("没有数据可供合并。")
+            print(f"读取失败: {file_name}")
 
-def main():
-    input_directory = "population_maf_results"
-    output_csv = "GF_PopsMaf.csv"
-    combine_maf(input_directory, output_csv)
+    if dfs:
+        combined_maf = pd.concat(dfs, axis=1)
+        combined_maf.T.to_csv(output_file)
+        print(f"成功！结果已保存到 {output_file}")
+    else:
+        print("无数据合并。")
 
 if __name__ == "__main__":
-    main()
+    combine_maf_optimized("population_maf_results", "GF_PopsMaf.csv")
 EOF2
 
-echo "所有操作已完成。"
+echo "脚本结束。"
