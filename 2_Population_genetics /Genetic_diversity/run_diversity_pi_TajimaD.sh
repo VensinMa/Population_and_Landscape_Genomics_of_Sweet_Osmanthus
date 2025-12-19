@@ -7,7 +7,7 @@ WORKDIR="/home/vensin/workspace/snpcalling_wild/12.population_genetics/Genetic_d
 # 输入文件路径
 VCF_ALL="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.recode.vcf.gz"
 VCF_LD="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.recode.vcf.gz"
-POP_FILE="/home/vensin/workspace/snpcalling_wild/12.population_genetics/faststructure/result/202samples.pop"
+POP_FILE="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202samples.pop"
 
 # 滑窗参数
 WINDOW_SIZE=100000  # 100kb
