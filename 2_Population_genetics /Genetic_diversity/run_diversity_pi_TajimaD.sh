@@ -11,111 +11,164 @@ POP_FILE="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202sampl
 
 # 滑窗参数
 WINDOW_SIZE=100000  # 100kb
-STEP_SIZE=10000     # 10kb (如果需要启用步长，请在下方生成命令处取消注释)
+STEP_SIZE=10000     # 10kb (如需启用步长，请修改下方命令生成部分)
 
-# 并行设置
+# ================= 2. 核心数与输入检查 =================
+
+# --- 2.1 检查输入文件是否存在 (Fail Fast) ---
+echo "正在检查输入文件..."
+MISSING=0
+if [ ! -f "$VCF_ALL" ]; then echo "Error: VCF_ALL 文件不存在: $VCF_ALL"; MISSING=1; fi
+if [ ! -f "$VCF_LD" ]; then echo "Error: VCF_LD 文件不存在: $VCF_LD"; MISSING=1; fi
+if [ ! -f "$POP_FILE" ]; then echo "Error: POP_FILE 文件不存在: $POP_FILE"; MISSING=1; fi
+
+if [ "$MISSING" -eq 1 ]; then
+    echo "请检查文件路径配置，脚本已终止。"
+    exit 1
+fi
+echo "输入文件检查通过。"
+
+# --- 2.2 自动计算并行任务数 ---
 # 获取系统逻辑核心数
 TOTAL_CORES=$(nproc)
-# 计算 80% 的核心数 (向下取整)
+# 默认使用 80% 的核心数
 MAX_JOBS=$(( TOTAL_CORES * 8 / 10 ))
-# 如果计算结果小于1，则默认为1
+# 如果计算结果小于1，默认为1
 if [ "$MAX_JOBS" -lt 1 ]; then MAX_JOBS=1; fi
 
-# 也可以在这里直接指定并行数，例如：
-MAX_JOBS=24
+# 【可选】如果你想手动指定，取消下面这行的注释并修改数字：
+# MAX_JOBS=10
 
 echo "检测到系统核心数: ${TOTAL_CORES}"
-echo "并行任务数设置为: ${MAX_JOBS} (占用约80%资源)"
+echo "并行任务数设置为: ${MAX_JOBS}"
 
-# ================= 2. 输入文件检查 & 环境准备 =================
-# 检查输入文件是否存在
-if [ ! -f "$VCF_ALL" ]; then echo "Error: VCF_ALL 文件不存在: $VCF_ALL"; exit 1; fi
-if [ ! -f "$VCF_LD" ]; then echo "Error: VCF_LD 文件不存在: $VCF_LD"; exit 1; fi
-if [ ! -f "$POP_FILE" ]; then echo "Error: POP_FILE 文件不存在: $POP_FILE"; exit 1; fi
-
+# ================= 3. 环境准备 =================
 mkdir -p "$WORKDIR"
 cd "$WORKDIR" || exit
 
-# 定义任务列表文件 (用于存放待执行的命令)
-JOB_FILE="${WORKDIR}/pending_jobs.txt"
-> "$JOB_FILE" # 清空或创建任务文件
+# 定义文件路径
+JOB_FILE="${WORKDIR}/pending_jobs.txt"    # 存放待执行命令
+PROGRESS_LOG="${WORKDIR}/progress.log"    # 存放进度标记
+> "$JOB_FILE"      # 清空任务文件
+> "$PROGRESS_LOG"  # 清空进度文件
 
-echo "正在准备样品列表..."
+echo "正在生成样品列表..."
 mkdir -p sample_lists/population
 mkdir -p sample_lists/lineage
 
-# --- A. 生成 [群体 Population] (第2列) 列表 ---
+# --- A. 生成 Population 列表 ---
 awk '{print $2}' "$POP_FILE" | sort | uniq > sample_lists/pop_names.txt
 while read -r POP_NAME; do
     awk -v p="$POP_NAME" '$2 == p {print $1}' "$POP_FILE" > "sample_lists/population/${POP_NAME}.txt"
 done < sample_lists/pop_names.txt
 
-# --- B. 生成 [谱系 Lineage] (第3列) 列表 ---
+# --- B. 生成 Lineage 列表 ---
 awk -F'\t' '{print $3}' "$POP_FILE" | sort | uniq > sample_lists/lineage_names.txt
 while read -r LINEAGE_NAME; do
     SAFE_NAME=$(echo "$LINEAGE_NAME" | tr ' ' '_')
-    # 注意：这里匹配原始的 LINEAGE_NAME，输出到 SAFE_NAME
     awk -F'\t' -v l="$LINEAGE_NAME" '$3 == l {print $1}' "$POP_FILE" > "sample_lists/lineage/${SAFE_NAME}.txt"
 done < sample_lists/lineage_names.txt
 
-
-# ================= 3. 定义命令生成函数 =================
-# 注意：现在这个函数不再直接运行 vcftools，而是生成命令到 JOB_FILE
+# ================= 4. 定义命令生成函数 =================
 run_calc_gen() {
     local D_NAME=$1
     local VCF_IN=$2
     local LEVEL=$3
     
-    local LIST_DIR="sample_lists/${LEVEL,,}" # 转小写
+    local LIST_DIR="sample_lists/${LEVEL,,}"
     local OUT_DIR="${WORKDIR}/${D_NAME}/${LEVEL}"
-    
-    echo "----------------------------------------------------"
-    echo "正在生成任务: [${D_NAME}] - [${LEVEL} Level]"
     
     mkdir -p "$OUT_DIR"
 
-    # 遍历列表目录下的所有 .txt 文件
     for list_file in "${LIST_DIR}"/*.txt; do
         group_name=$(basename "$list_file" .txt)
         if [ ! -s "$list_file" ]; then continue; fi
 
-        # 生成 Pi 命令
-        # 注意：这里把命令 echo 到文件里
-        # 1. Pi 计算命令
-        echo "vcftools --gzvcf $VCF_IN --keep $list_file --window-pi $WINDOW_SIZE --out ${OUT_DIR}/${group_name} > /dev/null 2>&1" >> "$JOB_FILE"
+        # 生成命令逻辑：
+        # 1. 执行计算
+        # 2. 成功后 (&&) 向 PROGRESS_LOG 文件追加一行 "done"
+        # 3. 输出重定向到 /dev/null 防止屏幕刷屏
         
-        # 2. Tajima's D 计算命令
-        echo "vcftools --gzvcf $VCF_IN --keep $list_file --TajimaD $WINDOW_SIZE --out ${OUT_DIR}/${group_name} > /dev/null 2>&1" >> "$JOB_FILE"
+        # Pi 命令
+        CMD_PI="vcftools --gzvcf $VCF_IN --keep $list_file --window-pi $WINDOW_SIZE --out ${OUT_DIR}/${group_name} > /dev/null 2>&1"
+        echo "${CMD_PI} && echo done >> ${PROGRESS_LOG}" >> "$JOB_FILE"
+        
+        # Tajima's D 命令
+        CMD_TD="vcftools --gzvcf $VCF_IN --keep $list_file --TajimaD $WINDOW_SIZE --out ${OUT_DIR}/${group_name} > /dev/null 2>&1"
+        echo "${CMD_TD} && echo done >> ${PROGRESS_LOG}" >> "$JOB_FILE"
     done
 }
 
-# ================= 4. 生成所有任务 =================
-
-# 生成 ALL_SNP 数据集任务
+# ================= 5. 生成所有任务 =================
+echo "正在生成任务列表..."
 run_calc_gen "ALL_SNP" "$VCF_ALL" "Population"
 run_calc_gen "ALL_SNP" "$VCF_ALL" "Lineage"
-
-# 生成 LD_SNP 数据集任务
 run_calc_gen "LD_SNP" "$VCF_LD" "Population"
 run_calc_gen "LD_SNP" "$VCF_LD" "Lineage"
 
-# ================= 5. 并行执行任务 =================
+TOTAL_TASKS=$(wc -l < "$JOB_FILE")
+echo "任务生成完毕，共计 ${TOTAL_TASKS} 个任务。"
 
-TOTAL_JOBS=$(wc -l < "$JOB_FILE")
+# ================= 6. 并行执行与进度监控 =================
+
+# --- 定义进度条函数 ---
+monitor_progress() {
+    local total=$1
+    local start_time=$(date +%s)
+    
+    while true; do
+        # 计算已完成行数
+        if [ -f "$PROGRESS_LOG" ]; then
+            completed=$(wc -l < "$PROGRESS_LOG")
+        else
+            completed=0
+        fi
+
+        # 计算百分比
+        if [ "$total" -gt 0 ]; then
+            percent=$(( completed * 100 / total ))
+        else
+            percent=0
+        fi
+        
+        # 计算耗时
+        current_time=$(date +%s)
+        elapsed=$(( current_time - start_time ))
+        
+        # 打印进度条 (使用 \r 回车不换行，实现原地刷新)
+        # 格式: Progress: [Completed/Total] Percentage% (Elapsed Time)
+        printf "\rProgress: [ %d / %d ] %d%% (Time: %ds) " "$completed" "$total" "$percent" "$elapsed"
+        
+        # 如果完成数等于总数，退出循环
+        if [ "$completed" -ge "$total" ]; then
+            break
+        fi
+        
+        # 每 0.5 秒刷新一次
+        sleep 0.5
+    done
+    echo "" # 换行
+}
+
 echo "===================================================="
-echo "总共生成了 ${TOTAL_JOBS} 个 vcftools 任务。"
-echo "开始并行执行 (并发数: ${MAX_JOBS})..."
-echo "请稍候..."
+echo "开始并行处理 (并发数: ${MAX_JOBS})"
+echo "===================================================="
 
-# 使用 xargs 进行并行处理
-# -P: 指定最大进程数
-# -I {}: 占位符
-# sh -c "{}": 执行命令字符串
+# 1. 在后台启动进度监控
+monitor_progress "$TOTAL_TASKS" &
+MONITOR_PID=$!
+
+# 2. 开始执行并行任务
+# xargs 说明: -P 并行数, -I 占位符, sh -c 执行具体的命令字符串
 cat "$JOB_FILE" | xargs -P "$MAX_JOBS" -I {} sh -c "{}"
 
-# 清理任务文件
+# 3. 等待监控进程结束 (确保进度条走到100%)
+wait $MONITOR_PID
+
+# ================= 7. 清理与完成 =================
 rm "$JOB_FILE"
+rm "$PROGRESS_LOG"
 
 echo "===================================================="
 echo "所有计算完成！"
-echo "结果保存在: ${WORKDIR}/[ALL_SNP|LD_SNP]/[Population|Lineage]/"
+echo "结果保存在: ${WORKDIR}"
