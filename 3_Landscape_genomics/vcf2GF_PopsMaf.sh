@@ -5,8 +5,8 @@
 # ===========================
 
 # 输入文件和目录
-vcf_file="/home/vensin/workspace/Population_maf/194samples_9674_adaptive_snps.recode.vcf"
-pop_file="/home/vensin/workspace/Population_maf/194sample.pop"
+vcf_file="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/208_samples_snp_filtered.LD.pruned.nomissing.recode.vcf.gz"
+pop_file="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202samples.pop"
 
 # 输出目录
 output_dir="population_maf_results"
