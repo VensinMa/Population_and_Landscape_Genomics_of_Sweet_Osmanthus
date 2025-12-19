@@ -11,93 +11,110 @@ POP_FILE="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202sampl
 
 # 滑窗参数
 WINDOW_SIZE=100000  # 100kb
-STEP_SIZE=10000     # 10kb
+STEP_SIZE=10000     # 10kb (如果需要启用步长，请在下方生成命令处取消注释)
 
-# ================= 2. 环境准备 =================
+# 并行设置
+# 获取系统逻辑核心数
+TOTAL_CORES=$(nproc)
+# 计算 80% 的核心数 (向下取整)
+MAX_JOBS=$(( TOTAL_CORES * 8 / 10 ))
+# 如果计算结果小于1，则默认为1
+if [ "$MAX_JOBS" -lt 1 ]; then MAX_JOBS=1; fi
+
+# 也可以在这里直接指定并行数，例如：
+MAX_JOBS=24
+
+echo "检测到系统核心数: ${TOTAL_CORES}"
+echo "并行任务数设置为: ${MAX_JOBS} (占用约80%资源)"
+
+# ================= 2. 输入文件检查 & 环境准备 =================
+# 检查输入文件是否存在
+if [ ! -f "$VCF_ALL" ]; then echo "Error: VCF_ALL 文件不存在: $VCF_ALL"; exit 1; fi
+if [ ! -f "$VCF_LD" ]; then echo "Error: VCF_LD 文件不存在: $VCF_LD"; exit 1; fi
+if [ ! -f "$POP_FILE" ]; then echo "Error: POP_FILE 文件不存在: $POP_FILE"; exit 1; fi
+
 mkdir -p "$WORKDIR"
 cd "$WORKDIR" || exit
+
+# 定义任务列表文件 (用于存放待执行的命令)
+JOB_FILE="${WORKDIR}/pending_jobs.txt"
+> "$JOB_FILE" # 清空或创建任务文件
 
 echo "正在准备样品列表..."
 mkdir -p sample_lists/population
 mkdir -p sample_lists/lineage
 
 # --- A. 生成 [群体 Population] (第2列) 列表 ---
-# 获取所有不重复的群体名
 awk '{print $2}' "$POP_FILE" | sort | uniq > sample_lists/pop_names.txt
-
 while read -r POP_NAME; do
-    # 提取该群体的 SampleID (第1列)
     awk -v p="$POP_NAME" '$2 == p {print $1}' "$POP_FILE" > "sample_lists/population/${POP_NAME}.txt"
 done < sample_lists/pop_names.txt
 
 # --- B. 生成 [谱系 Lineage] (第3列) 列表 ---
-# 获取所有不重复的谱系名 (假设文件是制表符分隔，处理空格问题)
-# 如果文件是空格分隔且谱系名里有空格，需要特别小心。这里假设使用 \t 或标准空格分割
-# 为了安全，我们对文件名中的空格进行替换
 awk -F'\t' '{print $3}' "$POP_FILE" | sort | uniq > sample_lists/lineage_names.txt
-
 while read -r LINEAGE_NAME; do
-    # 1. 创建安全的文件名 (把空格换成下划线)
     SAFE_NAME=$(echo "$LINEAGE_NAME" | tr ' ' '_')
-    
-    # 2. 提取该谱系的 SampleID
-    # 注意：这里匹配原始的 LINEAGE_NAME
+    # 注意：这里匹配原始的 LINEAGE_NAME，输出到 SAFE_NAME
     awk -F'\t' -v l="$LINEAGE_NAME" '$3 == l {print $1}' "$POP_FILE" > "sample_lists/lineage/${SAFE_NAME}.txt"
 done < sample_lists/lineage_names.txt
 
 
-# ================= 3. 定义计算函数 =================
-# 参数: DatasetName(ALL/LD) VCFPath Level(Population/Lineage)
-run_calc() {
+# ================= 3. 定义命令生成函数 =================
+# 注意：现在这个函数不再直接运行 vcftools，而是生成命令到 JOB_FILE
+run_calc_gen() {
     local D_NAME=$1
     local VCF_IN=$2
     local LEVEL=$3
     
-    local LIST_DIR="sample_lists/${LEVEL,,}" # 转小写: population 或 lineage
+    local LIST_DIR="sample_lists/${LEVEL,,}" # 转小写
     local OUT_DIR="${WORKDIR}/${D_NAME}/${LEVEL}"
     
     echo "----------------------------------------------------"
-    echo "正在计算: [${D_NAME}] - [${LEVEL} Level]"
-    echo "输入列表: ${LIST_DIR}"
-    echo "输出目录: ${OUT_DIR}"
+    echo "正在生成任务: [${D_NAME}] - [${LEVEL} Level]"
     
     mkdir -p "$OUT_DIR"
 
     # 遍历列表目录下的所有 .txt 文件
     for list_file in "${LIST_DIR}"/*.txt; do
-        # 获取文件名作为前缀 (去掉了路径和.txt后缀)
         group_name=$(basename "$list_file" .txt)
-        
-        # 跳过空文件
         if [ ! -s "$list_file" ]; then continue; fi
 
-        echo "  -> 处理分组: ${group_name}"
-
-        # 1. 计算 Pi
-        vcftools --gzvcf "$VCF_IN" \
-                 --keep "$list_file" \
-                 --window-pi "$WINDOW_SIZE" \
-                # --window-pi-step "$STEP_SIZE" \
-                 --out "${OUT_DIR}/${group_name}" 2> /dev/null
-
-        # 2. 计算 Tajima's D
-        vcftools --gzvcf "$VCF_IN" \
-                 --keep "$list_file" \
-                 --TajimaD "$WINDOW_SIZE" \
-                 --out "${OUT_DIR}/${group_name}" 2> /dev/null
+        # 生成 Pi 命令
+        # 注意：这里把命令 echo 到文件里
+        # 1. Pi 计算命令
+        echo "vcftools --gzvcf $VCF_IN --keep $list_file --window-pi $WINDOW_SIZE --out ${OUT_DIR}/${group_name} > /dev/null 2>&1" >> "$JOB_FILE"
+        
+        # 2. Tajima's D 计算命令
+        echo "vcftools --gzvcf $VCF_IN --keep $list_file --TajimaD $WINDOW_SIZE --out ${OUT_DIR}/${group_name} > /dev/null 2>&1" >> "$JOB_FILE"
     done
 }
 
-# ================= 4. 开始批量运行 =================
+# ================= 4. 生成所有任务 =================
 
-# 任务 1: ALL_SNP 数据集
-run_calc "ALL_SNP" "$VCF_ALL" "Population"
-run_calc "ALL_SNP" "$VCF_ALL" "Lineage"
+# 生成 ALL_SNP 数据集任务
+run_calc_gen "ALL_SNP" "$VCF_ALL" "Population"
+run_calc_gen "ALL_SNP" "$VCF_ALL" "Lineage"
 
-# 任务 2: LD_SNP 数据集
-# (注意: LD prune 后的数据算 Pi 会被低估，算 TajimaD 也不准，但通常也会算一下作为参考)
-run_calc "LD_SNP" "$VCF_LD" "Population"
-run_calc "LD_SNP" "$VCF_LD" "Lineage"
+# 生成 LD_SNP 数据集任务
+run_calc_gen "LD_SNP" "$VCF_LD" "Population"
+run_calc_gen "LD_SNP" "$VCF_LD" "Lineage"
+
+# ================= 5. 并行执行任务 =================
+
+TOTAL_JOBS=$(wc -l < "$JOB_FILE")
+echo "===================================================="
+echo "总共生成了 ${TOTAL_JOBS} 个 vcftools 任务。"
+echo "开始并行执行 (并发数: ${MAX_JOBS})..."
+echo "请稍候..."
+
+# 使用 xargs 进行并行处理
+# -P: 指定最大进程数
+# -I {}: 占位符
+# sh -c "{}": 执行命令字符串
+cat "$JOB_FILE" | xargs -P "$MAX_JOBS" -I {} sh -c "{}"
+
+# 清理任务文件
+rm "$JOB_FILE"
 
 echo "===================================================="
 echo "所有计算完成！"
