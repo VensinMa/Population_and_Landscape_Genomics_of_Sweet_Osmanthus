@@ -1,3 +1,5 @@
 cd /home/vensin/workspace/snpcalling_wild/12.population_genetics/Genetic_diversity
+chmod +x run_diversity_pi_TajimaD.sh
+chmod +x summarize_diversity.R
 ./ run_diversity_pi_TajimaD.sh
 Rscript ./summarize_diversity.R
