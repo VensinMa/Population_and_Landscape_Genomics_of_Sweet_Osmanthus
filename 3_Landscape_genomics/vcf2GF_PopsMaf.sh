@@ -16,7 +16,7 @@ fi
 output_dir="population_maf_results"
 temp_dir="${output_dir}/temp_ids"
 plink_binary_prefix="${output_dir}/master_binary" 
-MAX_JOBS=10
+MAX_JOBS=20
 
 mkdir -p "$output_dir"
 mkdir -p "$temp_dir"
