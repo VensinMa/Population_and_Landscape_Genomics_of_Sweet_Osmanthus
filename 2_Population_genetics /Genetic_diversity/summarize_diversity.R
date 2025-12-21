@@ -100,21 +100,33 @@ process_files <- function(dataset, level, metric_type) {
 # ================= 4. 批量处理 =================
 cat("开始统计数据...\n")
 
+# 计算总任务数，用于显示进度
+total_steps <- length(datasets) * length(levels) * length(metrics)
+current_step <- 0
+
 counter <- 1
 for (d in datasets) {
   for (l in levels) {
     for (m in metrics) {
+      # 更新并打印进度
+      current_step <- current_step + 1
+      cat(sprintf("[%d/%d] 正在处理: Dataset=%-8s | Level=%-10s | Metric=%s ...\n", 
+                  current_step, total_steps, d, l, m))
+      
       res <- process_files(d, l, m)
+      
       if (!is.null(res)) {
         results_list[[counter]] <- res
         counter <- counter + 1
+      } else {
+         cat(sprintf("    -> 警告: 未找到 %s - %s - %s 的数据文件，已跳过。\n", d, l, m))
       }
     }
   }
 }
 
 # ================= 5. 数据整合与公式计算 =================
-cat("正在合并并计算 Fis...\n")
+cat("\n所有文件读取完成，正在合并数据并计算 Fis...\n")
 
 if (length(results_list) == 0) {
   stop("未读取到任何有效数据，请检查路径或文件生成情况。")
@@ -135,6 +147,8 @@ final_wide <- final_long %>%
   arrange(Level, Group)
 
 # 计算 Fis (使用 Ho/He 公式)
+# Fis = 1 - (Ho / He)
+cat("正在应用公式计算 Fis = 1 - (Ho/He) ...\n")
 final_wide <- final_wide %>%
   mutate(
     ALL_SNP_Fis = 1 - (ALL_SNP_Ho / ALL_SNP_He),
