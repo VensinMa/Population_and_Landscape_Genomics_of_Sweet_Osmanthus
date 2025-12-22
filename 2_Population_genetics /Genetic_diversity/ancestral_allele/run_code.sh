@@ -14,10 +14,11 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
 vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.gz \
   --min-alleles 2 --max-alleles 2 \
   --minGQ 10 --minQ 30 --min-meanDP 6 \
-  --max-missing 1 --maf 0.05 \
+  --max-missing 1 --maf 0.01 \
   --recode --recode-INFO-all \
   --out /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing
 rm /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.gz
+
 # ======================================================================================================================================================
 mkdir -p /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/prepare_est-sfs
 cd  /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/prepare_est-sfs
