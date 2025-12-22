@@ -4,7 +4,7 @@ cd  /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele
 ###  剔除外类群样本   O_DSMX  O_MXL   O_XYWJM   保留浙南木犀 网脉木犀 蒙自桂花 O_ZNMX  NFM_1   O_MZGH
 vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
   --remove-indv O_MXL \
-  --remove-indv O_XYWJM \
+  --remove-indv O_XYYG \
   --remove-indv O_DSMX \
   --recode --recode-INFO-all \
   --stdout \
@@ -59,7 +59,7 @@ drwxrwxr-x 2 vensin vensin 4.0K 11月 18 19:20 ./
 '''
 
 # 2、运行 est-sfs
-cd /home/vensin/workspace/est-sfs/
+cd /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/
 '''
 (base) vensin@ubuntu24-04:~/workspace/est-sfs$ cat config-2outgroup.txt config-3outgroup.txt
 n_outgroup 2
@@ -69,7 +69,6 @@ n_outgroup 3
 model 2
 nrandom 100
 '''
-est-sfs config-2outgroup.txt  /home/vensin/workspace/est-sfs/prepare_est-sfs/196samples_filtered_2_outgroup.snp.nomissing.rename.plink_estsfs_input.txt  seedfile.txt 2_outgroup_output_file_sfs.txt  2_outgroup_output_file_p_anc.txt
 est-sfs config-3outgroup.txt  /home/vensin/workspace/est-sfs/prepare_est-sfs/197samples_filtered_3_outgroup.snp.nomissing.rename.plink_estsfs_input.txt  seedfile.txt 3_outgroup_output_file_sfs.txt  3_outgroup_output_file_p_anc.txt
 
 # 3、极性化原vcf文件
