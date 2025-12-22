@@ -11,20 +11,13 @@ vcftools --gzvcf /home/data/10.gatk_variantfiltration/SNP/snp_filtered.vcf.gz \
   2> /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.log \
   | bgzip -@ 8 > /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.gz
 
-# 然后建立索引
-tabix -p vcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.gz
-
-
 vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.gz \
   --min-alleles 2 --max-alleles 2 \
   --minGQ 10 --minQ 30 --min-meanDP 6 \
   --max-missing 1 --maf 0.05 \
   --recode --recode-INFO-all \
   --out /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing
-
-# 然后建立索引
-tabix -p vcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.recode.vcf
-
+rm /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.vcf.gz
 # ======================================================================================================================================================
 mkdir -p /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/prepare_est-sfs
 cd  /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/prepare_est-sfs
