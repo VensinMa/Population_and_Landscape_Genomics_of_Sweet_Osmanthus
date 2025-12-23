@@ -34,7 +34,7 @@ gzip plink.frq.strat
 #!/bin/bash
 
 # ================= 配置区域 =================
-INPUT="208samples.treemix.in.gz"
+INPUT="208samples.frq.gz"
 OUTDIR="./root_MXL"
 ROOT="O_MXL"
 THREADS=16      # 设置同时运行的任务数 
@@ -48,9 +48,9 @@ CMD_FILE="treemix_commands.txt"
 
 echo "正在生成任务列表..."
 
-# 生成 0 到 15 个迁移事件，每个重复 1000 次
+# 生成 0 到 15 个迁移事件，每个重复 100 次
 for m in {0..15}; do
-    for i in {1..1000}; do
+    for i in {1..100}; do
         # 生成随机种子，保证每次 bootstrap 都不一样
         SEED=$RANDOM
         
