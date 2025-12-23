@@ -97,7 +97,7 @@ try:
             key = f"{CHROM}_{POS}"
 
             if key not in site_data:
-                out_vcf.write(line) 
+                skipped_sites += 1
                 continue
 
             ancestral_probability = site_data[key]
@@ -147,6 +147,7 @@ try:
 
     print("VCF file has been polarized based on ancestral states.")
     print(f"Total sites processed in VCF: {total_sites_read}")
+    print(f"Sites removed (no ancestral info): {skipped_sites}")
     print(f"Successfully polarized sites: {polarized_sites}")
 
 except Exception as e:
