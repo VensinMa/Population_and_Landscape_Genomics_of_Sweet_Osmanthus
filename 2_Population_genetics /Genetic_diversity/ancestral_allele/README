@@ -1,0 +1,4 @@
+STEP 1 : vcf_to_estsfs.py
+STEP 2 : est-sfs
+STEP 3 : vcf_polarize.py
+STEP 4 : indv_GT_stats_v2.py
