@@ -20,7 +20,7 @@ vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/2
 cat 208samples.tfam | awk '{print $1"\t"$2"\t"$1}' > 208samples.pop.cov
 
 # 1.4 计算等位基因组的频率，生成plink.frq.strat和plink.nosex文件
-plink --threads 4 --tfile 208samples --freq --allow-extra-chr --chr-set 14 --within 208samples.pop.cov
+plink --threads 4 --tfile 208samples --freq --allow-extra-chr --chr-set 23 --within 208samples.pop.cov
 
 # 1.5 压缩等位基因频率文件
 gzip plink.frq.strat
