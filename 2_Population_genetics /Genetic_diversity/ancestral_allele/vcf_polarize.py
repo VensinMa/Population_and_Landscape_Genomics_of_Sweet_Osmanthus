@@ -83,6 +83,7 @@ try:
 
         total_sites_read = 0
         polarized_sites = 0
+        skipped_sites = 0
         trans_table = str.maketrans("01", "10")
 
         for line in in_vcf:
