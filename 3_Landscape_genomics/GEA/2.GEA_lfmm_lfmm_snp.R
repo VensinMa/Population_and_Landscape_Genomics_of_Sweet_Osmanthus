@@ -5,15 +5,12 @@
 if(!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
 if(!requireNamespace("lfmm", quietly = TRUE))    remotes::install_github("bcm-uga/lfmm")
 if(!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-
 if (!requireNamespace("qvalue", quietly = TRUE)) BiocManager::install("qvalue")
-if (!requireNamespace("LEA", quietly = TRUE))    BiocManager::install("LEA")
 if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")
 
 library(lfmm)
 library(qvalue)  
 library(data.table)
-library(LEA)
 
 # 设置工作目录 (请确保路径正确)
 setwd("/home/vensin/Rstudio/RStudio/Population_and_Landscape_Genomics_of_Sweet_Osmanthus/GEA_2025/lfmm/snp")
@@ -34,21 +31,23 @@ env_names <- colnames(X_df)
 # 关键：转换为矩阵 (Matrix)，lfmm 计算需要矩阵格式
 X <- as.matrix(X_df)
 cat("环境数据维度:", dim(X), "\n")
+## 环境数据维度: 202 19 
 
 # --- 读取基因型数据 (响应变量 Y) ---
-# 读取 .lfmm 文件 (通常没有表头)
-Y_path <- "/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.plink.recodeA.lfmm"
+# 读取 .lfmm 文件 (没有表头)
+Y_path <- "/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.missing0.05.plink.recodeA.lfmm"
 Y <- fread(Y_path, header = FALSE)
 
 # 关键：转换为矩阵
 Y <- as.matrix(Y)
 cat("基因型数据维度:", dim(Y), "\n")
+## 基因型数据维度: 202 10590591 
 
 # 安全检查：确保 X 和 Y 的样本量一致
 if(nrow(X) != nrow(Y)) stop("错误：环境数据 (X) 与 基因型数据 (Y) 的样本数(行数)不匹配！")
 
 # --- 读取 snp ID ---
-snp_ids <- fread("/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.ID", 
+snp_ids <- fread("/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.missing0.05.ID", 
                  header = FALSE)
 
 # 安全检查：确保 snp 数量 与 ID 数量一致
@@ -71,17 +70,16 @@ cat("正在进行统计检验 (GIF 校正)...\n")
 pv <- lfmm::lfmm_test(Y = Y, X = X, 
                       lfmm = mod.lfmm, 
                       calibrate = "gif")
-
-# 保存中间结果对象
-saveRDS(pv, file = "pv_results.rds")
-# pv <- readRDS("pv_results.rds") # 如果需要重新加载
+saveRDS(pv, file = "pv.rds")
+# pv <- readRDS("pv.rds") 
 
 # ==============================================================================
-########### 删除一部分环境变量，释放部分内存 ####################
+############# 如内存不足，可删除部分环境变量，释放内存 #########################\
+# 128G内存在这里占用70%左右
 rm(mod.lfmm)  # 删除模型对象
 rm(Y)         # 删除基因型大矩阵
 gc()          # 强制进行垃圾回收，释放内存回系统
-print(ls())
+print(ls())   # 释放后内存占用40% 左右
 # ==============================================================================
 # 4. 提取与保存 P 值 (P-values)
 # ==============================================================================
@@ -127,9 +125,9 @@ for (i in 1:ncol(calibrated_pvalues)) {
     qobj <- qvalue(p = pvals)
     all_qvalues[, i] <- qobj$qvalues
     
-    # (可选) 如果确实需要每个因子单独存文件，可取消下面注释
-    # tmp_df <- data.frame(SNP_ID = snp_ids$V1, qvalues = qobj$qvalues)
-    # fwrite(tmp_df, file = paste0("qvalues_env_", env_names[i], ".csv"))
+    # 如需要每个因子单独存q值文件，可取消下面注释
+    tmp_df <- data.frame(SNP_ID = snp_ids$V1, qvalues = qobj$qvalues)
+    fwrite(tmp_df, file = paste0("qvalues_env_", env_names[i], ".csv"))
   })
 }
 
@@ -269,5 +267,5 @@ if (union_count > 0) {
   cat("\n没有检测到任何显著关联位点 (FDR < 0.05)。\n")
 }
 
-## 所有环境因子下显著位点(FDR < 0.05)的并集数量为: 31557 
+## 所有环境因子下显著位点(FDR < 0.05)的并集数量为: 346683 
 cat("筛选完成。\n")
