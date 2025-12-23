@@ -34,21 +34,23 @@ env_names <- colnames(X_df)
 # 关键：转换为矩阵 (Matrix)，lfmm 计算需要矩阵格式
 X <- as.matrix(X_df)
 cat("环境数据维度:", dim(X), "\n")
+## 环境数据维度: 202 19 
 
 # --- 读取基因型数据 (响应变量 Y) ---
-# 读取 .lfmm 文件 (通常没有表头)
-Y_path <- "/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel/202_samples_indel_filtered.plink.recodeA.lfmm"
+# 读取 .lfmm 文件 (没有表头)
+Y_path <- "/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel/202_samples_indel_filtered.missing0.05.plink.recodeA.lfmm"
 Y <- fread(Y_path, header = FALSE)
 
 # 关键：转换为矩阵
 Y <- as.matrix(Y)
 cat("基因型数据维度:", dim(Y), "\n")
+## 基因型数据维度: 202 810159
 
 # 安全检查：确保 X 和 Y 的样本量一致
 if(nrow(X) != nrow(Y)) stop("错误：环境数据 (X) 与 基因型数据 (Y) 的样本数(行数)不匹配！")
 
 # --- 读取 indel ID ---
-indel_ids <- fread("/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel/202_samples_indel_filtered.ID", 
+indel_ids <- fread("/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel/202_samples_indel_filtered.missing0.05.ID", 
                  header = FALSE)
 
 # 安全检查：确保 indel 数量 与 ID 数量一致
@@ -69,10 +71,8 @@ cat("正在进行统计检验 (GIF 校正)...\n")
 pv <- lfmm::lfmm_test(Y = Y, X = X, 
                       lfmm = mod.lfmm, 
                       calibrate = "gif")
-
-# 保存中间结果对象
-saveRDS(pv, file = "pv_results.rds")
-# pv <- readRDS("pv_results.rds") # 如果需要重新加载
+saveRDS(pv, file = "pv.rds")
+# pv <- readRDS("pv.rds") # 如果需要重新加载
 
 # ==============================================================================
 # 4. 提取与保存 P 值 (P-values)
@@ -86,7 +86,7 @@ calibrated_pvalues <- pv$calibrated.pvalue
 cat("基因组膨胀因子 (GIF):\n")
 print(pv$gif)
 
-# 关键优化：给矩阵赋予列名 (环境因子名称)，否则结果只有数字，分不清是哪个环境因子
+# 给矩阵赋予列名 (环境因子名称)，否则结果只有数字，分不清是哪个环境因子
 colnames(raw_pvalues) <- env_names
 colnames(calibrated_pvalues) <- env_names
 
@@ -119,9 +119,9 @@ for (i in 1:ncol(calibrated_pvalues)) {
     qobj <- qvalue(p = pvals)
     all_qvalues[, i] <- qobj$qvalues
     
-    # (可选) 如果确实需要每个因子单独存文件，可取消下面注释
-    # tmp_df <- data.frame(INDEL_ID = indel_ids$V1, qvalues = qobj$qvalues)
-    # fwrite(tmp_df, file = paste0("qvalues_env_", env_names[i], ".csv"))
+    # 如果需要每个因子单独存文件
+    tmp_df <- data.frame(INDEL_ID = indel_ids$V1, qvalues = qobj$qvalues)
+    fwrite(tmp_df, file = paste0("qvalues_env_", env_names[i], ".csv"))
   })
 }
 
@@ -261,5 +261,5 @@ if (union_count > 0) {
   cat("\n没有检测到任何显著关联位点 (FDR < 0.05)。\n")
 }
 
-## 所有环境因子下显著位点(FDR < 0.05)的并集数量为: 31557 
+## 所有环境因子下显著位点(FDR < 0.05)的并集数量为: 32395 
 cat("筛选完成。\n")
