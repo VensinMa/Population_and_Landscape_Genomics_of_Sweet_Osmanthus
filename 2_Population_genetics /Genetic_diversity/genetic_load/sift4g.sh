@@ -135,16 +135,14 @@ Output directory:/home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/s
 End Time for parallel code: Thu Dec 25 21:06:24 CST 2025
 '''
 
-#
+#=============================== 提取 SIFT_Deleterious 位点
 INPUT_VCF="205_samples_snp_filtered.nomissing.recode_polarized_SIFTpredictions.vcf"
 OUTPUT_VCF="205_samples_SIFT_Deleterious.vcf"
 
 # 1. 提取 VCF 表头 (Header)
-# 这一步很快
 grep "^#" $INPUT_VCF > $OUTPUT_VCF
 
 # 2. 提取含有 "DELETERIOUS" 标记的行
-# 这一步需要读 20G 文件，可能需要几分钟，请耐心等待
 grep "DELETERIOUS" $INPUT_VCF >> $OUTPUT_VCF
 
 # 3. 统计一下提取到了多少个有害变异
