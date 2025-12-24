@@ -62,8 +62,7 @@ python vcf_polarize.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/an
 ## Successfully polarized sites: 3254416
 
 # 4、Genetic Load Calculation / 遗传负荷计算: 计算内类群个体突变的基因型数量 （相对于新的参考基因型 —— 祖先等位基因）
-python indv_GT_stats_v2.py 205_samples_snp_filtered.nomissing.recode_polarized.vcf  --output  205_samples_snp_filtered.nomissing.recode_polarized_3_outgroup_indv_GT_stats_res.txt
-## Processing 205_samples_snp_filtered.nomissing.recode_polarized.vcf...
-## Writing results to 205_samples_snp_filtered.nomissing.recode_polarized_3_outgroup_indv_GT_stats_res.txt...
-## Done.
+cd /home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/sift_results
+python /home/vensin/software/script/indv_GT_stats_v2.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/sift_results/205_samples_SIFT_Deleterious.vcf --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_SIFT_Deleterious.txt
+python /home/vensin/software/script/indv_GT_stats_v2.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.snpeff_LOF.vcf --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_snpeff_LOF.txt
 
