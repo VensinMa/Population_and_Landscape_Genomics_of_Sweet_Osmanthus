@@ -34,8 +34,8 @@ gzip plink.frq.strat
 
 # ================= 配置区域 =================
 INPUT="208samples.frq.gz"
-OUTDIR="./root_MXL"
-ROOT="O_MXL"
+OUTDIR="./MXL"
+ROOT="OUTGROUP"
 THREADS=16      # 设置同时运行的任务数 
 # ===========================================
 
