@@ -20,7 +20,7 @@ vcftools --gzvcf /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/2
 cat 208samples.tfam | awk '{print $1"\t"$2"\t"$1}' > 208samples.pop.cov
 
 # 1.4 计算等位基因组的频率，生成plink.frq.strat和plink.nosex文件
-plink --threads 4 --tfile 208samples --freq --allow-extra-chr --chr-set 23 --within 208samples.pop.cov
+plink --threads 4 --tfile 208samples --freq --allow-extra-chr  --within 208samples.pop.cov
 
 # 1.5 压缩等位基因频率文件
 gzip plink.frq.strat
@@ -30,7 +30,6 @@ gzip plink.frq.strat
 /home/vensin/anaconda3/envs/faststructure/bin/python /home/vensin/software/script/plink2treemix.py plink.frq.strat.gz 208samples.frq.gz
 
 #########2.treemix推断基因流
-
 #!/bin/bash
 
 # ================= 配置区域 =================
@@ -50,7 +49,7 @@ echo "正在生成任务列表..."
 
 # 生成 0 到 15 个迁移事件，每个重复 100 次
 for m in {0..15}; do
-    for i in {1..100}; do
+    for i in {1..10}; do
         # 生成随机种子，保证每次 bootstrap 都不一样
         SEED=$RANDOM
         
