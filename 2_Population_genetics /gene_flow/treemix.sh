@@ -60,7 +60,7 @@ for m in {0..15}; do
         # -k ${BLOCK_SIZE}: 设置 Block 大小
         # -s ${SEED}: 设置随机种子
         # > /dev/null 2>&1: 减少屏幕输出，防止刷屏
-        echo "treemix -i ${INPUT} -m ${m} -bootstrap  -root ${ROOT} -s ${SEED} -o ${OUT_PREFIX} > /dev/null 2>&1" >> ${CMD_FILE}
+        echo "treemix -i ${INPUT} -m ${m} -bootstrap  -global -root ${ROOT} -s ${SEED} -o ${OUT_PREFIX} > /dev/null 2>&1" >> ${CMD_FILE}
     done
 done
 
