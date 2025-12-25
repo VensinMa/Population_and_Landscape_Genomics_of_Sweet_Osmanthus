@@ -9,7 +9,7 @@ WORK_DIR="/home/vensin/workspace/snpcalling_wild/12.population_genetics/Demograp
 
 # 输入数据路径
 GENOME_REF="/home/vensin/workspace/snpcalling_wild/0.genome/SFZ.A.onlychr.fa"
-# [修正1] 注意末尾必须加斜杠 /，否则拼接文件名会出错
+# 注意末尾必须加斜杠 /，否则拼接文件名会出错
 BAM_DIR="/home/data/4.picard_dedup/markdup/" 
 
 # 输出数据路径 (会自动创建文件夹)
@@ -30,9 +30,9 @@ SAMTOOLS="samtools"
 PSMC_PARAMS="-N25 -t15 -r5 -p 4+25*2+4+6"
 
 # --- 样本列表 ---
-species_list=(
-BN_2
-)
+species_list=(CP_1 CX_9 DA_1 DA_2 DA_4 DA_6 DA_7 DA_8 DRS_1 DRS_2 DRS_4 DRS_5 DRS_6 DRS_7 DST_1 DST_2 DST_4 DST_7 DST_8 
+JD_1 JMX_17 JMX_18 JMX_19 JMX_1 LCJ_10 LCJ_11 LCJ_13 LCJ_6 LCJ_7 LCJ_9 LQ_15 LS_6 LX_5 QDH_12 RX_2 RX_4 RX_5 RX_7 RX_8 
+RX_9 SFZ_2 SK_1 SL_4 SLZ_3 SXK_4 WYL_5 XC_8 XNF_3 YK_4 YX_2 YZY_7 ZJS_10)
 
 # =============================================================================
 # 2. 准备工作
@@ -63,9 +63,9 @@ process_species() {
     # --- 步骤 1: 智能计算深度 (优化版) ---
     echo "[${species}] Calculating average depth (using sampling)..."
     
-    # [修正2] 增加 head -n 10000000 
-    # 仅读取 BAM 文件的前 1000 万个位点计算深度，极大提高速度，且估算足够准确。
-    avg_depth=$($SAMTOOLS depth "$bam_file" | head -n 10000000 | awk '{sum+=$3} END { print sum/NR }')
+    #  增加 head -n 10000000 
+    # 仅读取 BAM 文件的前 20000 万个位点计算深度，极大提高速度，且估算足够准确。
+    avg_depth=$($SAMTOOLS depth "$bam_file" | head -n 200000000 | awk '{sum+=$3} END { print sum/NR }')
     
     # 如果深度计算失败 (例如 bam 为空)，设置默认值防止报错
     if [ -z "$avg_depth" ]; then
