@@ -1,173 +1,150 @@
+#!/bin/bash
+
 # ===========================
-# Shell脚本部分：处理群体MAF
+# 优化版 Shell脚本 v2：修复 ID 匹配问题
 # ===========================
 
-# --- 配置区域 ---
-# 输入文件路径 (请仔细核对)
+# 输入文件和目录
 vcf_file="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202_samples_snp_filtered.LD.pruned.nomissing.recode.vcf.gz"
 pop_file="/home/vensin/workspace/snpcalling_wild/11.vcftools_filter/snp/202samples.pop"
-
-# 并发数控制 (防止电脑卡死，建议最多设置为 CPU 核心数的80%-90%)
-MAX_JOBS=20
-
-# 检查输入文件是否存在
-if [ ! -f "$vcf_file" ]; then
-    echo "Error: VCF file not found: $vcf_file"
-    exit 1
-fi
-if [ ! -f "$pop_file" ]; then
-    echo "Error: Population file not found: $pop_file"
-    exit 1
-fi
 
 # 输出目录
 output_dir="population_maf_results"
 temp_dir="${output_dir}/temp_ids"
-plink_binary_prefix="${output_dir}/master_binary"
+global_bed="${output_dir}/global_dataset" # 全局二进制文件前缀
 
-# 确保输出和临时目录存在
+# 并发控制：同时运行的最大任务数
+MAX_JOBS=10
+
 mkdir -p "$output_dir"
 mkdir -p "$temp_dir"
 
-# ------------------------------------------------------------------
-# Step 1: 预处理 VCF -> PLINK Binary
-# ------------------------------------------------------------------
-echo ">>> Step 1: 将 VCF 转换为 PLINK 二进制格式 (加速后续计算)..."
-echo "    使用 --double-id 确保样本名同时作为 FID 和 IID，解决匹配问题。"
-
-if [ ! -f "${plink_binary_prefix}.bed" ]; then
-    plink --vcf "$vcf_file" \
-          --make-bed \
-          --allow-extra-chr \
-          --keep-allele-order \
-          --double-id \
-          --out "$plink_binary_prefix" \
-          --silent
-    
-    if [ $? -ne 0 ]; then
-        echo "Error: VCF 转 PLINK 失败，请检查 VCF 格式。"
-        exit 1
-    fi
-else
-    echo "    检测到二进制文件已存在，跳过转换步骤。"
-fi
-
-# ------------------------------------------------------------------
-# Step 2: 准备群体 ID 列表
-# ------------------------------------------------------------------
-echo ">>> Step 2: 提取并生成群体 ID 列表..."
-
-# 提取唯一的群体名称
+echo "=== 第一步：预处理 ==="
+# 1. 提取群体信息
 cut -f2 "$pop_file" | sort | uniq > "${temp_dir}/unique_groups.txt"
 
-# 为每个群体生成 .ids 文件
-# 格式要求：FamilyID IndividualID
-# 由于 Step 1 用了 --double-id，所以这里两列都必须是 SampleID
+# 2. 生成ID列表
+# 格式：SampleID SampleID (为了匹配 --double-id)
 while read -r group; do
-    # 在 pop 文件中找该群体的样本，输出两列相同的 ID
-    grep -w "$group" "$pop_file" | awk '{print $1, $1}' > "${temp_dir}/${group}.ids"
+    awk -v g="$group" '$2 == g {print $1, $1}' "$pop_file" > "${temp_dir}/${group}.ids"
 done < "${temp_dir}/unique_groups.txt"
 
-# ------------------------------------------------------------------
-# Step 3: 并行计算频率
-# ------------------------------------------------------------------
-echo ">>> Step 3: 开始并行计算各群体频率..."
-
-# 定义处理函数
-process_group() {
-    local group=$1
-    
-    # 使用 --bfile 读取二进制文件，速度极快
-    plink --bfile "$plink_binary_prefix" \
-          --keep "${temp_dir}/${group}.ids" \
+# 3. [关键修正] 将 VCF 转为全局 PLINK 二进制文件
+# 增加了 --double-id 参数，确保 .fam 文件中的 FID 和 IID 都是样本名
+if [ ! -f "${global_bed}.bed" ]; then
+    echo "正在将 VCF 转换为全局 PLINK 二进制文件 (包含 --double-id)..."
+    plink --vcf "$vcf_file" \
+          --make-bed \
+          --double-id \
           --allow-extra-chr \
-          --freq \
-          --out "${output_dir}/${group}_population_maf" \
+          --keep-allele-order \
+          --out "$global_bed" \
+          --set-missing-var-ids @:# \
           --silent
-
-    if [ $? -eq 0 ]; then
-        echo "[完成] $group"
-    else
-        echo "[失败] $group (请检查日志 ${output_dir}/${group}_population_maf.log)"
-    fi
-}
-
-# 循环提交任务
-while read -r group; do
-    process_group "$group" &
     
-    # 并发控制：如果后台任务数 >= MAX_JOBS，则等待任意一个完成
-    if [[ $(jobs -r -p | wc -l) -ge $MAX_JOBS ]]; then
-        wait -n
+    # [Debug] 检查一下生成的 ID 格式，输出前5行给用户看
+    echo "--- 检查生成的 .fam 文件前5行 ---"
+    head -n 5 "${global_bed}.fam"
+    echo "--------------------------------"
+else
+    echo "全局 PLINK 文件已存在，跳过转换。"
+fi
+
+echo "=== 第二步：并行计算各群体 MAF ==="
+
+# 任务计数器
+count=0
+
+while read -r group; do
+    (
+        # 直接读取全局 bed 文件，只计算频率
+        plink --bfile "$global_bed" \
+              --keep "${temp_dir}/${group}.ids" \
+              --freq \
+              --allow-extra-chr \
+              --out "${output_dir}/${group}_population_maf" \
+              --silent
+
+        if [ -f "${output_dir}/${group}_population_maf.frq" ]; then
+            echo "[成功] 群体 $group 处理完毕"
+        else
+            # 如果失败，打印一下对应的 ID 文件内容，方便调试
+            echo "[失败] 群体 $group 计算出错。请检查 ${temp_dir}/${group}.ids 是否与 .fam 文件匹配"
+        fi
+    ) &
+
+    # 并发控制逻辑
+    ((count++))
+    if [ $((count % MAX_JOBS)) -eq 0 ]; then
+        wait # 每启动 MAX_JOBS 个任务后等待它们完成
     fi
+
 done < "${temp_dir}/unique_groups.txt"
 
-# 等待所有剩余任务
 wait
-echo ">>> 所有群体频率计算完毕。"
+echo "所有群体 MAF 计算完毕。"
 
 # ====================================
-# Python脚本：合并MAF结果 (高效版)
+# 嵌入优化后的 Python脚本：合并结果
 # ====================================
-echo ">>> Step 4: 合并结果生成矩阵..."
 
-python3 << 'EOF_PYTHON'
+python3 << 'EOF'
 import pandas as pd
 import os
 import glob
 
-def combine_maf_optimized(input_dir, output_file):
-    print(f"正在读取 {input_dir} 下的频率文件...")
+def efficient_combine_maf(input_dir, output_file):
+    print("\n===== 开始合并 MAF 结果 (Pandas 优化版) =====")
     
-    # 获取所有 .frq 文件
     frq_files = glob.glob(os.path.join(input_dir, "*_population_maf.frq"))
     
     if not frq_files:
-        print("Error: 未找到 .frq 文件，Step 3 可能全部失败。")
+        print("错误：未找到 .frq 文件。这说明上一步 PLINK 计算全部失败。")
         return
-    
-    dfs = []
+
+    data_frames = []
     
     for file_path in frq_files:
-        # 从文件名提取群体名
+        # 获取群体名
         file_name = os.path.basename(file_path)
-        pop_name = file_name.replace('_population_maf.frq', '')
+        population_name = file_name.replace('_population_maf.frq', '')
         
         try:
-            # 读取 PLINK 的 .frq 文件 (空格分隔)
-            # 只需要 SNP 和 MAF 两列
-            df = pd.read_csv(file_path, delim_whitespace=True, usecols=['SNP', 'MAF'])
+            # 读取 SNP 和 MAF 列
+            df = pd.read_csv(file_path, sep=r'\s+', usecols=['SNP', 'MAF'], engine='c')
             
-            # 重命名 MAF 列为 群体名
-            df.rename(columns={'MAF': pop_name}, inplace=True)
-            
-            # 设置 SNP 为索引，方便后续拼接
+            # 设置 SNP 为索引
             df.set_index('SNP', inplace=True)
+            df.rename(columns={'MAF': population_name}, inplace=True)
             
-            dfs.append(df)
+            data_frames.append(df)
+            
         except Exception as e:
-            print(f"警告: 读取 {file_name} 失败 - {e}")
+            print(f"读取文件 {file_name} 失败: {e}")
 
-    if dfs:
-        print("正在拼接矩阵 (这比循环 merge 快很多)...")
-        # 横向拼接 (axis=1)
-        combined_df = pd.concat(dfs, axis=1)
-        
-        # 填充 NaN (如果有群体缺失某些位点，填 0)
-        combined_df.fillna(0, inplace=True)
-        
-        # 转置矩阵：变成 行=群体，列=SNP
-        final_matrix = combined_df.T
-        
-        # 保存 CSV
-        final_matrix.to_csv(output_file)
-        print(f"成功！结果已保存到: {output_file}")
-        print(f"矩阵维度: {final_matrix.shape}")
-    else:
-        print("Error: 没有有效数据被合并。")
+    if not data_frames:
+        print("没有有效数据被读取。")
+        return
+
+    print(f"正在合并 {len(data_frames)} 个群体的数据...")
+    
+    # 使用 concat 横向拼接
+    combined_maf = pd.concat(data_frames, axis=1, join='outer')
+    
+    # 填充缺失值 (可选，这里填0表示该群体该位点无多态或缺失)
+    # combined_maf.fillna(0, inplace=True) 
+
+    # 转置
+    final_df = combined_maf.T
+    
+    # 保存
+    final_df.to_csv(output_file)
+    print(f"===== 合并完成 =====")
+    print(f"输出文件: {output_file}")
+    print(f"矩阵维度: {final_df.shape} (行:群体, 列:SNPs)")
 
 if __name__ == "__main__":
-    combine_maf_optimized("population_maf_results", "GF_PopsMaf.csv")
-EOF_PYTHON
+    efficient_combine_maf("population_maf_results", "GF_PopsMaf.csv")
+EOF
 
-echo ">>> 脚本执行结束。"
+echo "脚本执行结束。"
