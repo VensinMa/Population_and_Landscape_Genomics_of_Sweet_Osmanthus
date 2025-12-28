@@ -1,0 +1,16 @@
+# 1. 设定 classpath (指向 stairway_plot_es 文件夹)
+CP="/home/vensin/software/stairway_plot_v2.2/stairway_plot_es"
+
+# 2. 批量生成 .sh 运行脚本
+for file in *.blueprint; do
+    echo "Processing $file ..."
+    java -cp "$CP" Stairbuilder "$file"
+done
+
+# 3. 批量执行计算脚本
+for script in *.blueprint.sh; do
+    echo "Starting analysis for $script ..."
+    # bash $script
+    # 使用 nohup 后台运行，防止断线中断，同时记录日志
+    nohup bash "$script" > "${script}.log" 2>&1 &
+done
