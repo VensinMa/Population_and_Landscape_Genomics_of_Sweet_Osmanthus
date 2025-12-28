@@ -23,6 +23,8 @@ for input_file in *.fitcoal.txt; do
     echo "----------------------------------------"
     
     # 运行 FitCoal
+    # 确保 tables 文件夹存在
+    mkdir tables
     nohup java -Xmx10g -cp "$JAR_PATH" FitCoal.calculate.SinglePopDecoder \
         -table tables/ \
         -input "$input_file" \
