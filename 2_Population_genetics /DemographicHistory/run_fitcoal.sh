@@ -2,7 +2,7 @@ cat > run_fitcoal.sh << 'EOF'
 #!/bin/bash
 
 # ================= 配置区域 =================
-# FitCoal.jar 的路径 (根据你之前的 ll 信息)
+# FitCoal.jar 的路径 
 JAR_PATH="/home/vensin/software/FitCoal1.3/FitCoal.jar"
 
 # 参数设置 (FitCoal输入数据需要换算)
@@ -13,10 +13,10 @@ GENOME_LEN_KB="693703"
 GEN_TIME="6"
 
 # ================= 开始计算 =================
-# 循环处理目录下的所有 .sfs.txt 文件
-for input_file in *.sfs.txt; do
+# 循环处理目录下的所有 .fitcoal.txt 文件
+for input_file in *.fitcoal.txt; do
     # 获取群体名 (如 Central)
-    pop_name="${input_file%.sfs.txt}"
+    pop_name="${input_file%.fitcoal.txt}"
     
     echo "----------------------------------------"
     echo "正在运行群体: $pop_name"
