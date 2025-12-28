@@ -43,4 +43,5 @@ Samples in pops file not present in VCF:
 Samples in VCF not present in pops file: ZJP_1, HYX_2, EJ_7, DST_5, GHX_4, ST_6, YZY_2, XC_1, ST_2, EJ_3, ZJP_3, HJLL_6, ZJP_5, GHX_1, FZA_3, HYX_3, YZY_4, JMX_16, JMX_2, ZJP_2, ST_5, QDH_1, EJ_8, HJLL_3, QDH_3, HJLL_2, FZA_1, ST_4, LX_2, O_ZNMX, ST_8, HYX_6, GHX_2, JMX_15, DST_9, EJ_6, YX_7, O_WMMX, GHX_13, JMX_3, ZJP_8, ZJP_4, HJLL_7, ST_1, EJ_1, FZA_5, GHX_8, FZA_8, ZJP_10, GHX_9, ST_7, HJLL_1, XC_5, HYX_4, FZA_4, GHX_10, YZY_10, FZA_6, ZJP_7, XC_6, SL_2, O_MZGH, ST_3, HYX_1, SL_3, EJ_4, HYX_5, XC_2, LX_4, ZJS_10
 Continue, excluding samples not in both pops file and VCF? (yes/no)
 yes
+SFS files written to /home/vensin/workspace/snpcalling_wild/12.population_genetics/Demographic_History/easySFS/135samples/output_fitcoal_unfolded_135samples
 '''
