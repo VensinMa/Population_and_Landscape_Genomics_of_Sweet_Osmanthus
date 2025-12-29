@@ -26,48 +26,61 @@ if ! command -v env_parallel &> /dev/null; then
 fi
 source $(which env_parallel.bash)
 
-# FST 计算单元 (输出到 Stdout，不直接写文件)
+# FST 计算单元
 calculate_fst_unit() {
     pair=$1
-    # 环境变量: $CURRENT_VCF, $CURRENT_LOG_DIR, $VCF_FLAG (区分 --vcf/--gzvcf)
+    # 环境变量: $CURRENT_VCF, $CURRENT_LOG_DIR, $VCF_FLAG
     
     IFS=":" read -r group1 group2 <<< "$pair"
     base_name1=$(basename "${group1%.*}")
     base_name2=$(basename "${group2%.*}")
     
-    # 定义临时日志路径
+    # 定义基础名称
     output_base="fst_${base_name1}_vs_${base_name2}"
-    log_file="${CURRENT_LOG_DIR}/${output_base}"
+    log_file_base="${CURRENT_LOG_DIR}/${output_base}"
+    
+    # 定义控制台日志路径 (存储 Mean Fst 结果)
+    console_log="${log_file_base}.console.log"
     
     # 运行 VCFtools
-    # 错误日志重定向到 /dev/null 以保持屏幕整洁，除非你想调试
+    # 注意：VCFtools 会自动产生一个 .windowed.weir.fst 文件，但我们只需要屏幕输出的 Mean Fst
     vcftools "$VCF_FLAG" "$CURRENT_VCF" \
              --weir-fst-pop "$group1" \
              --weir-fst-pop "$group2" \
              --fst-window-size 100000 \
              --fst-window-step 10000 \
-             --out "$log_file" > "${log_file}.console.log" 2>&1
+             --out "$log_file_base" > "$console_log" 2>&1
     
-    # 检查结果
-    if [ -f "${log_file}.log" ]; then
-        OUTPUT=$(cat "${log_file}.log")
+    # 【修正逻辑】：直接检查 console.log 是否存在且包含结果
+    if [ -f "$console_log" ]; then
+        OUTPUT=$(cat "$console_log")
+        
+        # 尝试提取 Mean Fst
         MEAN_FST=$(echo "$OUTPUT" | grep "Weir and Cockerham mean Fst estimate" | awk '{print $NF}')
         WEIGHTED_FST=$(echo "$OUTPUT" | grep "Weir and Cockerham weighted Fst estimate" | awk '{print $NF}')
         
-        # 成功提取后，清理临时文件 (节省空间)
-        rm "${log_file}.log" "${log_file}.console.log"
+        # 如果成功提取到了数字
+        if [[ ! -z "$MEAN_FST" && "$MEAN_FST" != "NA" ]]; then
+            # 清理：删除 VCFtools 生成的庞大的 windowed 数据文件和日志，只保留结果行
+            # 如果你想保留详细窗口数据，请注释掉下面这一行 rm
+            rm -f "${log_file_base}.windowed.weir.fst" "$console_log"
+        else
+            MEAN_FST="NA"
+            WEIGHTED_FST="NA"
+            # 失败时保留 console log 以便排查
+            echo "Warning: Extraction failed for $base_name1 vs $base_name2" >&2
+        fi
     else
         MEAN_FST="NA"
         WEIGHTED_FST="NA"
-        # 失败时保留 console log 以便排查
-        echo "Warning: Calculation failed for $base_name1 vs $base_name2" >&2
+        echo "Error: No log generated for $base_name1 vs $base_name2" >&2
     fi
 
     # 处理空值
     if [ -z "$MEAN_FST" ]; then MEAN_FST="NA"; fi
     if [ -z "$WEIGHTED_FST" ]; then WEIGHTED_FST="NA"; fi
 
-    # 输出CSV行 (标准输出)
+    # 输出CSV行
     echo "${base_name1},${base_name2},${MEAN_FST},${WEIGHTED_FST}"
 }
 export -f calculate_fst_unit
@@ -79,10 +92,13 @@ run_r_matrix_conversion() {
     echo ">>> [R] 转换矩阵: $out_csv"
     Rscript - "$in_csv" "$out_csv" << 'EOF'
 args <- commandArgs(trailingOnly = TRUE)
-data <- read.csv(args[1], header=TRUE)
-output_file <- args[2]
+infile <- args[1]
+outfile <- args[2]
 
-if (nrow(data) == 0) stop("CSV is empty.")
+if (file.info(infile)$size == 0) stop("CSV file is empty")
+data <- read.csv(infile, header=TRUE)
+
+if (nrow(data) == 0) stop("CSV has no data rows.")
 
 groups <- unique(c(as.character(data$Group1), as.character(data$Group2)))
 mat <- matrix(0, nrow=length(groups), ncol=length(groups), dimnames=list(groups, groups))
@@ -93,7 +109,7 @@ for (i in 1:nrow(data)) {
     if(is.na(val)) val <- 0 
     mat[r, c] <- val; mat[c, r] <- val 
 }
-write.csv(mat, output_file)
+write.csv(mat, outfile)
 EOF
 }
 
@@ -103,6 +119,7 @@ EOF
 
 # 1. 准备群体文件
 echo ">>> [Init] 初始化群体文件..."
+rm -rf pop_files log_files # 清理旧的运行残留，防止干扰
 mkdir -p pop_files
 awk '{print $1 > "pop_files/"$2".pop"}' "$POP_INFO_FILE"
 
@@ -133,11 +150,9 @@ run_pipeline() {
     local MAT_CSV="Pops_fst_matrix_${TYPE}.csv"
 
     mkdir -p "$LOG_DIR"
-    
-    # 写入 CSV 标题
     echo "Group1,Group2,Mean_FST,Weighted_FST" > "$RES_CSV"
 
-    # 设置 VCF 标志 (自动检测 .gz)
+    # 设置 VCF 标志
     export CURRENT_VCF="$VCF"
     export CURRENT_LOG_DIR="$LOG_DIR"
     if [[ "$VCF" == *.gz ]]; then
@@ -147,7 +162,7 @@ run_pipeline() {
         export VCF_FLAG="--vcf"
     fi
 
-    # 并行计算 (输出直接追加到 CSV，注意 --bar 显示进度条)
+    # 并行计算 (输出直接追加到 CSV)
     echo ">>> [Parallel] 计算中..."
     env_parallel --bar -j "$THREADS" calculate_fst_unit ::: "${combinations[@]}" >> "$RES_CSV"
 
