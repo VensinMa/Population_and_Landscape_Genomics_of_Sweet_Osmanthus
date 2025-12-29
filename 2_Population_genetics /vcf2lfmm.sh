@@ -79,7 +79,4 @@ awk '{ $1=$2=$3=$4=$5=$6=""; print substr($0, index($0,$7)) }' > /home/vensin/wo
 # Step 3: 提取变异位点ID
 bcftools query -f '%CHROM:%POS\n' /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel/202_samples_indel_filtered.missing0.05.recode.vcf.gz > /home/vensin/workspace/snpcalling_wild/11.vcftools_filter/indel/202_samples_indel_filtered.missing0.05.ID  
   
-
-
-
       
