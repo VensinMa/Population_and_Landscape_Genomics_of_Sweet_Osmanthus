@@ -1,18 +1,22 @@
-cd /home/vensin/software
-conda create -n easySFS && conda activate easySFS
-git clone https://github.com/isaacovercast/easySFS.git
+## cd /home/vensin/software
+## conda create -n easySFS && conda activate easySFS
+## git clone https://github.com/isaacovercast/easySFS.git
 
-cd /home/vensin/workspace/snpcalling_wild/12.population_genetics/Demographic_History/easySFS
-easySFS.py -i /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.vcf -p 205samples.pop -a --unfolded --preview
+######################################################################## 
+mkdir -p  /home/vensin/workspace/snpcalling_wild/12.population_genetics/Demographic_History/easySFS/40samples
+cd /home/vensin/workspace/snpcalling_wild/12.population_genetics/Demographic_History/easySFS/40samples
+easySFS.py -i /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.vcf -p ../40samples.pop -a --unfolded --preview
 # -a 表示生成 Unfolded SFS (适用于已极化的数据)
-# --proj 顺序必须严格对应: East, Central, SW-Yunnan, SW-Guizhou, OUTGROUP
 
+# --proj 顺序必须严格对应: Processing 4 populations - ['Southwest-Yunnan', 'Southwest-Guizhou', 'Central', 'East']
 easySFS.py -i /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.vcf \
--p 205samples.pop \
+-p ../40samples.pop \
 -a \
---unfolded\
---proj 272,54,24,54,6 \
--o output_fitcoal_unfolded
+--unfolded \
+--proj 20,20,20,20 \
+-o output_fitcoal_unfolded_40samples
+
+
 
 ######################################################################## 
 mkdir -p  /home/vensin/workspace/snpcalling_wild/12.population_genetics/Demographic_History/easySFS/135samples
