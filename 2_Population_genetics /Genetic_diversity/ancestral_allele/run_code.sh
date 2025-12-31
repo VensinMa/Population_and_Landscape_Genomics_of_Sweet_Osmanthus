@@ -63,6 +63,15 @@ python vcf_polarize.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/an
 
 # 4、Genetic Load Calculation / 遗传负荷计算: 计算内类群个体突变的基因型数量 （相对于新的参考基因型 —— 祖先等位基因）
 cd /home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/sift_results
-python /home/vensin/software/script/indv_GT_stats_v2.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/sift_results/205_samples_SIFT_Deleterious.vcf --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_SIFT_Deleterious.txt
-python /home/vensin/software/script/indv_GT_stats_v2.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.snpeff_LOF.vcf --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_snpeff_LOF.txt
+python /home/vensin/software/script/indv_GT_stats_v2.py \
+        /home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/sift_results/205_samples_SIFT_Deleterious.vcf \
+        --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_SIFT_Deleterious.txt
+        
+python /home/vensin/software/script/indv_GT_stats_v2.py \
+        /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.snpeff_LOF.vcf \
+        --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_snpeff_LOF.txt
+
+python /home/vensin/software/script/indv_GT_stats_v2.py \
+        /home/vensin/workspace/snpcalling_wild/13.genetic_load/radical/205_samples_snp_filtered.nomissing.recode_polarized.annovar_Radical.recode.vcf \
+        --output  /home/vensin/workspace/snpcalling_wild/13.genetic_load/205_samples_indv_GT_stats_res_annovar_Radical.txt
 
