@@ -63,7 +63,7 @@ vcftools \
     --vcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.vcf \
     --positions radical_positions.txt \
     --recode --recode-INFO-all \
-    --out 205_samples_snp_filtered.nomissing.recode_polarized.annovar_Radical.vcf
+    --out 205_samples_snp_filtered.nomissing.recode_polarized.annovar_Radical
 
 ## After filtering, kept 205 out of 205 Individuals
 ## Outputting VCF file...
