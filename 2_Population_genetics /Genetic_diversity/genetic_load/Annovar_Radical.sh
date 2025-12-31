@@ -52,3 +52,22 @@ echo "--------------------------------"
 ## Radical (激进) 突变数 (>150):
 ## 11702 SFZ.A.radical_sites_list.txt
 
+# 8.提取 Radical突变位点
+# 提取 Chr 和 Pos，用制表符分隔
+awk '{print $5"\t"$6}' SFZ.A.radical_sites_list.txt > radical_positions.txt
+
+# 检查一下格式 (应该是两列：Chr01  18764)
+head radical_positions.txt
+
+vcftools \
+    --vcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.vcf \
+    --positions radical_positions.txt \
+    --recode --recode-INFO-all \
+    --out 205_samples_snp_filtered.nomissing.recode_polarized.annovar_Radical.vcf
+
+## After filtering, kept 205 out of 205 Individuals
+## Outputting VCF file...
+## After filtering, kept 11702 out of a possible 3254416 Sites
+## Run Time = 9.00 seconds
+
+
