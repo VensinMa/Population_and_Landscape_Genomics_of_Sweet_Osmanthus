@@ -1,4 +1,4 @@
 cd /home/vensin/workspace/snpcalling_wild/12.population_genetics/Genetic_diversity
-chmod +x stat_genetic_diversity.sh  summarize_diversity.R
-./ stat_genetic_diversity.sh
-Rscript ./summarize_diversity.R
+chmod +x 1.stat_genetic_diversity.sh  2.summarize_genetic_diversity.R
+./1.stat_genetic_diversity.sh
+Rscript ./2.summarize_genetic_diversity.R
