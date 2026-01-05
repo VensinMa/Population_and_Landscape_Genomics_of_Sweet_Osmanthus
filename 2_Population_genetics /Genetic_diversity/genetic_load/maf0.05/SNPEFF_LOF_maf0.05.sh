@@ -28,4 +28,4 @@ INPUT="$DIR/205_samples_snp_filtered.nomissing.maf0.05_polarized.snpeff.vcf"
 OUTPUT="$DIR/205_samples_snp_filtered.nomissing.maf0.05_polarized.snpeff_LOF.vcf"
 java -jar /home/vensin/software/snpEff/SnpSift.jar filter "( exists LOF )" $INPUT > $OUTPUT
 grep -v "^#" /home/vensin/workspace/snpcalling_wild/13.genetic_load/maf0.05/205_samples_snp_filtered.nomissing.maf0.05_polarized.snpeff_LOF.vcf | wc -l
-## 692
+## 514
