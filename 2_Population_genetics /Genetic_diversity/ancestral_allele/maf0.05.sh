@@ -14,6 +14,8 @@ wget https://raw.githubusercontent.com/VensinMa/Population_and_Landscape_Genomic
 chmod +x vcf_to_estsfs.py
 
 python vcf_to_estsfs.py  /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.maf0.05.recode.vcf  O_WMMX O_ZNMX O_MZGH
+## Total sites processed: 1111139
+## Successfully kept sites: 874030
 
 # 2、Run Est-SFS / 运行 Est-SFS:
 ## 安装 est-sfs 
@@ -28,14 +30,14 @@ est-sfs config-3outgroup.txt  prepare_est-sfs/205_samples_snp_filtered.nomissing
 
 # 3、VCF Polarization / VCF 极性化: 极性化原vcf文件，剔除祖先状态不确定的位点。
 cd /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs_0.05
-python vcf_polarize.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.recode.vcf  \
-        3_outgroup_output_file_p_anc.txt prepare_est-sfs/205_samples_snp_filtered.nomissing.recode_estsfs.positions.txt
+python vcf_polarize.py /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.maf0.05.recode.vcf  \
+        3_outgroup_output_file_p_anc.txt prepare_est-sfs/205_samples_snp_filtered.nomissing.maf0.05.recode_estsfs.positions.txt
 ## Loading data files...
-## Loaded 3254416 sites with ancestral probabilities.
+## Loaded 874030 sites with ancestral probabilities.
 ## VCF file has been polarized based on ancestral states.
-## Total sites processed in VCF: 3851435
-## Sites removed (no ancestral info): 597019
-## Successfully polarized sites: 3254416
+## Total sites processed in VCF: 1111139
+## Sites removed (no ancestral info): 237109
+## Successfully polarized sites: 874030
 
 # 4、Genetic Load Calculation / 遗传负荷计算: 计算内类群个体突变的基因型数量 （相对于新的参考基因型 —— 祖先等位基因）
 cd /home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/sift_results
