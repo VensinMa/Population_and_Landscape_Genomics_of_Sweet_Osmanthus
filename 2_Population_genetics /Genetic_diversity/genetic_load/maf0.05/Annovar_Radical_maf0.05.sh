@@ -9,15 +9,13 @@ cp /home/vensin/software/annovar/example/grantham.matrix ./
 # 注意：如果输入的是标准VCF，用 vcf4 可能比 vcf4old 更稳妥，但如果确定是旧格式则保持不变
 convert2annovar.pl \
     --format vcf4old \
-    /home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.maf0.05.recode.vcf \
+    /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs_0.05/205_samples_snp_filtered.nomissing.maf0.05.recode_polarized.vcf \
     --outfile 205_samples_snp_filtered.nomissing.maf0.05.recode_polarized.avinput
 
 '''
-NOTICE: for SNPs, column 6 and beyond MAY BE heterozygosity status, quality score, read depth, RMS mapping quality, quality by depth, if these information can be recognized automatically
-NOTICE: for indels, column 6 and beyond MAY BE heterozygosity status, quality score, read depth, read count supporting indel call, RMS mapping quality, if these information can be recognized automatically
-NOTICE: Read 1111206 lines and wrote 898606 different variants at 1111139 genomic positions (1111139 SNPs and 0 indels)
-NOTICE: Among 1111139 different variants at 1111139 positions, 197639 are heterozygotes, 700967 are homozygotes
-NOTICE: Among 1111139 SNPs, 740752 are transitions, 370387 are transversions (ratio=2.00)
+NOTICE: Read 874097 lines and wrote 721368 different variants at 874030 genomic positions (874030 SNPs and 0 indels)
+NOTICE: Among 874030 different variants at 874030 positions, 162514 are heterozygotes, 558854 are homozygotes
+NOTICE: Among 874030 SNPs, 565833 are transitions, 308197 are transversions (ratio=1.84)
 '''
 
 # 4. 运行注释 (核心步骤)
@@ -45,9 +43,9 @@ wc -l SFZ.A.grantham.maf0.05.radical_sites_list.txt
 echo "--------------------------------"
 
 ## 非同义突变总数:
-## 64635 SFZ.A.grantham.maf0.05.nonsynonymous_variants.txt
+## 34137 SFZ.A.grantham.maf0.05.nonsynonymous_variants.txt
 ## Radical (激进) 突变数 (>150):
-## 3732 SFZ.A.grantham.maf0.05.radical_sites_list.txt
+## 1997 SFZ.A.grantham.maf0.05.radical_sites_list.txt
 
 # 8.提取 Radical突变位点
 # 提取 Chr 和 Pos，用制表符分隔
@@ -57,12 +55,12 @@ awk '{print $5"\t"$6}' SFZ.A.grantham.maf0.05.radical_sites_list.txt > SFZ.A.gra
 head SFZ.A.grantham.maf0.05.radical_positions.txt
 
 vcftools \
-    --vcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs/205_samples_snp_filtered.nomissing.recode_polarized.vcf \
+    --vcf /home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs_0.05/205_samples_snp_filtered.nomissing.maf0.05.recode_polarized.vcf \
     --positions SFZ.A.grantham.maf0.05.radical_positions.txt \
     --recode --recode-INFO-all \
     --out 205_samples_snp_filtered.nomissing.maf0.05.recode_polarized.annovar_Radical
 
 ## After filtering, kept 205 out of 205 Individuals
 ## Outputting VCF file...
-## After filtering, kept 3017 out of a possible 3254416 Sites
-## Run Time = 7.00 seconds
+## After filtering, kept 1997 out of a possible 874030 Sites
+## Run Time = 2.00 seconds
