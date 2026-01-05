@@ -118,3 +118,4 @@ grep "DELETERIOUS" $INPUT_VCF >> $OUTPUT_VCF
 echo "提取完成！有害变异数量："
 grep -v "^#" $OUTPUT_VCF | wc -l
 ## 提取完成！有害变异数量：11442
+
