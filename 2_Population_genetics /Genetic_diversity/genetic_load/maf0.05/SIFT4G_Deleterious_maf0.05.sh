@@ -65,41 +65,40 @@ java -Xmx10g -jar $SIFT_JAR \
     -d $SIFT_DB \
     -r $OUTPUT_DIR \
     -t
-'''
-Start Time for SIFT4G code: Tue Jan 06 09:57:43 CST 2026
 
+'''
 Started Running .......
 Running in Multitranscripts mode
 
 Chromosome      WithSIFT4GAnnotations   WithoutSIFT4GAnnotations        Progress
-Chr22                   5563                    30839                   Completed : 1/23
-Chr18                   6249                    38875                   Completed : 2/23
+Chr21                   4695                    31827                   Completed : 1/23
+Chr14                   6755                    40962                   Completed : 2/23
 Chr19                   5098                    33866                   Completed : 3/23
-Chr20                   5409                    35735                   Completed : 4/23
-Chr21                   4695                    31827                   Completed : 5/23
-Chr09                   6324                    35853                   Completed : 6/23
+Chr09                   6324                    35853                   Completed : 4/23
+Chr15                   6138                    39329                   Completed : 5/23
+Chr22                   5563                    30839                   Completed : 6/23
 Chr13                   7981                    44350                   Completed : 7/23
-Chr07                   4130                    28891                   Completed : 8/23
-Chr10                   6549                    43133                   Completed : 9/23
-Chr14                   6755                    40962                   Completed : 10/23
-Chr03                   5624                    37669                   Completed : 11/23
-Chr02                   9332                    56702                   Completed : 12/23
-Chr08                   7363                    41387                   Completed : 13/23
-Chr15                   6138                    39329                   Completed : 14/23
-Chr16                   6950                    40097                   Completed : 15/23
-Chr23                   4995                    30613                   Completed : 16/23
-Chr05                   7703                    46941                   Completed : 17/23
-Chr12                   7397                    43296                   Completed : 18/23
-Chr11                   6698                    42637                   Completed : 19/23
-Chr04                   9090                    55841                   Completed : 20/23
-Chr01                   11710                   72626                   Completed : 21/23
-Chr17                   5923                    37509                   Completed : 22/23
-Chr06                   8659                    45826                   Completed : 23/23
+Chr03                   5624                    37669                   Completed : 8/23
+Chr07                   4130                    28891                   Completed : 9/23
+Chr10                   6549                    43133                   Completed : 10/23
+Chr08                   7363                    41387                   Completed : 11/23
+Chr17                   5923                    37509                   Completed : 12/23
+Chr16                   6950                    40097                   Completed : 13/23
+Chr20                   5409                    35735                   Completed : 14/23
+Chr23                   4995                    30613                   Completed : 15/23
+Chr11                   6698                    42637                   Completed : 16/23
+Chr02                   9332                    56702                   Completed : 17/23
+Chr06                   8659                    45826                   Completed : 18/23
+Chr05                   7703                    46941                   Completed : 19/23
+Chr01                   11710                   72626                   Completed : 20/23
+Chr18                   6249                    38875                   Completed : 21/23
+Chr12                   7397                    43296                   Completed : 22/23
+Chr04                   9090                    55841                   Completed : 23/23
 
 Merging temp files....
 SIFT4G Annotation completed !
 Output directory:/home/vensin/workspace/snpcalling_wild/13.genetic_load/maf0.05/sift4g/sift_results
-End Time for parallel code: Tue Jan 06 09:59:08 CST 2026
+End Time for parallel code: Tue Jan 06 11:21:27 CST 2026
 '''
 
 #=============================== 提取 SIFT_Deleterious 位点
