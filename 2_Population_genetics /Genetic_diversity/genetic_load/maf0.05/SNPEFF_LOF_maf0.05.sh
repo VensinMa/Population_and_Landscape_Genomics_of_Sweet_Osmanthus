@@ -7,7 +7,7 @@
 
 ### 2.snpeff 注释  
 # 输入文件路径
-INPUT_VCF="/home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.maf0.05.recode.vcf"
+INPUT_VCF="/home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs_0.05/205_samples_snp_filtered.nomissing.maf0.05.recode_polarized.vcf"
 # 输出文件路径
 OUTPUT_VCF="/home/vensin/workspace/snpcalling_wild/13.genetic_load/maf0.05/205_samples_snp_filtered.nomissing.maf0.05_polarized.snpeff.vcf"
 
