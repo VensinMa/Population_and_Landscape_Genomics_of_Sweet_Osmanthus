@@ -52,7 +52,7 @@ SIFT_JAR="/home/vensin/software/SIFT_build/scripts_to_build_SIFT_db/SIFT4G_Annot
 # 指向刚刚建好的数据库目录
 SIFT_DB="/home/vensin/workspace/snpcalling_wild/13.genetic_load/sift4g/SFZ.A"
 # 输入文件
-INPUT_VCF="/home/vensin/workspace/snpcalling_wild/13.genetic_load/ancestral_allele/205_samples_snp_filtered.nomissing.maf0.05.recode.vcf"
+INPUT_VCF="/home/vensin/workspace/snpcalling_wild/13.genetic_load/est-sfs_0.05/205_samples_snp_filtered.nomissing.maf0.05.recode_polarized.vcf"
 # 输出目录
 OUTPUT_DIR="/home/vensin/workspace/snpcalling_wild/13.genetic_load/maf0.05/sift4g/sift_results"
 
